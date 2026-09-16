@@ -116,7 +116,7 @@ const BOSS_BG_MAP = [
    school/location can get unique art instead of the species' generic
    background. Keyed by the boss's `location` field. */
 const LOCATION_BG_MAP = [
-  ["MP Campus", "Mystic_bg.png"],
+  ["MP Campus", "mystic_bg.png"],
 ];
 
 /* Per boss+location art (the actual in-game render screenshots).
@@ -134,7 +134,7 @@ const BOSS_LOCATION_ART_MAP = [
   { name: "Etherial Fist",     location: "Sacred Gate Hole",        file: "Etherial_Fist_SG.png" },
   { name: "Ninja Knife",       location: "Sacred Gate Hole",                  file: "Ninja_Knife.png" },
   { name: "Dark Swordsman",       location: "Sacred Gate Hole",                  file: "Dark_Swordsman.png" },
-  { name: "Dark Art Master",       location: "Leonine Campus B3",                  file: "Dam.png" },
+  { name: "Dark Art Master",       location: "Leonine Campus B3",                  file: "dam.png" },
   { name: "Cruel Jupiter",       location: "Practicing Yard",                  file: "cj enhance.png" },
 ];
 
@@ -164,8 +164,8 @@ function getBossBg(b){
 const MAP_ICON_MAP = [
   ["Mystic Peak", "Mystic_Peak.png"],
   ["MP Campus", "Mystic_Peak.png"],
-  ["Sacred Gate Hole", "Sacred_gate.png"],
-  ["SG Campus", "Sacred_gate.png"],
+  ["Sacred Gate Hole", "Sacred_Gate.png"],
+  ["SG Campus", "Sacred_Gate.png"],
   ["Phoenix", "Phoenix.png"],
   
 ];
@@ -175,12 +175,12 @@ const MAP_ICON_MAP = [
    entries here as more location backgrounds are provided (Phoenix,
    Sacred Gate, etc). */
 const PANEL_BG_MAP = [
-  ["Mystic Peak Hole", "mystic.png"],
+  ["Mystic Peak Hole", "Mystic.png"],
   ["MP Campus", "mystic_bg.png"],
-  ["Phoenix Hole", "phoenix_hole_bg.png"],
-  ["Phoenix Campus", "phc_bg.png"],
-  ["Sacred Gate Hole", "sacredgate_bg.png"],
-  ["SG Campus", "sg_campus_bg.png"],
+  ["Phoenix Hole", "phoenix_hole_BG.png"],
+  ["Phoenix Campus", "Phc_bg.png"],
+  ["Sacred Gate Hole", "SacredGate_BG.png"],
+  ["SG Campus", "SG_Campus_BG.png"],
   ["Practicing Yard", "Practicing_Yard_BG.png"],
 ];
 
@@ -671,9 +671,9 @@ soundBtn.onclick = () => {
    scene shot, which crops awkwardly into a small 44px circle — these
    are tighter portrait crops chosen to read clearly at avatar size. */
 const BOSS_HISTORY_ICON_MAP = [
-  ["Etherial Fist", "image/boss/Etherial_Fist_Icon.png"],
-  ["Darkswordsman Jr.", "image/boss/Darkswordsman_Icon.png"],
-  ["Ninja Knife", "image/boss/Ninja_Knife_Icon.png"],
+  ["Etherial Fist", "Etherial_Fist_Icon.png"],
+  ["Darkswordsman Jr.", "Darkswordsman_Icon.png"],
+  ["Ninja Knife", "Ninja_Knife_Icon.png"],
 ];
 
 function getHistoryIcon(name){
