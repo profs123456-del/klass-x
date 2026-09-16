@@ -104,19 +104,19 @@ const bosses = [
 /* Map of boss-name substring -> background image file.
    (Replaces the long chain of duplicated if-statements from the original file.) */
 const BOSS_BG_MAP = [
-  ["Darkswordsman Jr.", "image/boss/ds jr.png"],
-  ["Etherial Fist", "image/boss/EF.png"],
-  ["Ninja Knife", "image/boss/NK.png"],
-  ["Dark Swordsman", "image/boss/Dark_Swordsman.png"],
-  ["Dark Art Master", "image/boss/dam.png"],
-  ["Cruel Jupiter", "image/boss/cj enhance.png"],
+  ["Darkswordsman Jr.", "ds jr.png"],
+  ["Etherial Fist", "EF.png"],
+  ["Ninja Knife", "NK.png"],
+  ["Dark Swordsman", "Dark_Swordsman.png"],
+  ["Dark Art Master", "dam.png"],
+  ["Cruel Jupiter", "cj enhance.png"],
 ];
 
 /* Per-location art overrides. Checked before BOSS_BG_MAP, so a specific
    school/location can get unique art instead of the species' generic
    background. Keyed by the boss's `location` field. */
 const LOCATION_BG_MAP = [
-  ["MP Campus", "/image/map/Mystic_bg.png"],
+  ["MP Campus", "Mystic_bg.png"],
 ];
 
 /* Per boss+location art (the actual in-game render screenshots).
@@ -124,18 +124,18 @@ const LOCATION_BG_MAP = [
    locations (e.g. "Phoenix Hole") are shared by more than one boss
    species and need to resolve to different art per species. */
 const BOSS_LOCATION_ART_MAP = [
-  { name: "Darkswordsman Jr.", location: "MP Campus",    file: "image/boss/MP_Campdsjr.png" },
-  { name: "Darkswordsman Jr.", location: "Mystic Peak Hole",    file: "image/boss/Mystic_Peak_Hole.png" },
-  { name: "Darkswordsman Jr.", location: "Phoenix Hole",        file: "image/boss/Phoenix_Hole_DS.png" },
-  { name: "Darkswordsman Jr.", location: "SG Campus",  file: "image/boss/Sacred_Gate_Dsjr_.png" },
-  { name: "Darkswordsman Jr.", location: "Phoenix Campus",      file: "image/boss/Phoenix_Campus_DS.png" },
-  { name: "Etherial Fist",     location: "Mystic Peak Hole",    file: "image/boss/Etherial_Fist_MP.png" },
-  { name: "Etherial Fist",     location: "Phoenix Hole",        file: "image/boss/Etherial_Fist_PH.png" },
-  { name: "Etherial Fist",     location: "Sacred Gate Hole",        file: "image/boss/Etherial_Fist_SG.png" },
-  { name: "Ninja Knife",       location: "Sacred Gate Hole",                  file: "image/boss/Ninja_Knife.png" },
-  { name: "Dark Swordsman",       location: "Sacred Gate Hole",                  file: "image/boss/Dark_Swordsman.png" },
-  { name: "Dark Art Master",       location: "Leonine Campus B3",                  file: "image/boss/Dam.png" },
-  { name: "Cruel Jupiter",       location: "Practicing Yard",                  file: "image/boss/cj enhance.png" },
+  { name: "Darkswordsman Jr.", location: "MP Campus",    file: "MP_Campdsjr.png" },
+  { name: "Darkswordsman Jr.", location: "Mystic Peak Hole",    file: "Mystic_Peak_Hole.png" },
+  { name: "Darkswordsman Jr.", location: "Phoenix Hole",        file: "Phoenix_Hole_DS.png" },
+  { name: "Darkswordsman Jr.", location: "SG Campus",  file: "Sacred_Gate_Dsjr_.png" },
+  { name: "Darkswordsman Jr.", location: "Phoenix Campus",      file: "Phoenix_Campus_DS.png" },
+  { name: "Etherial Fist",     location: "Mystic Peak Hole",    file: "Etherial_Fist_MP.png" },
+  { name: "Etherial Fist",     location: "Phoenix Hole",        file: "Etherial_Fist_PH.png" },
+  { name: "Etherial Fist",     location: "Sacred Gate Hole",        file: "Etherial_Fist_SG.png" },
+  { name: "Ninja Knife",       location: "Sacred Gate Hole",                  file: "Ninja_Knife.png" },
+  { name: "Dark Swordsman",       location: "Sacred Gate Hole",                  file: "Dark_Swordsman.png" },
+  { name: "Dark Art Master",       location: "Leonine Campus B3",                  file: "Dam.png" },
+  { name: "Cruel Jupiter",       location: "Practicing Yard",                  file: "cj enhance.png" },
 ];
 
 function getBossBg(b){
@@ -162,11 +162,11 @@ function getBossBg(b){
    Keyed independently of species name/background, since different boss
    species (Darkswordsman Jr., Etherial Fist) can share the same school. */
 const MAP_ICON_MAP = [
-  ["Mystic Peak", "image/icon/Mystic_Peak.png"],
-  ["MP Campus", "image/icon/Mystic_Peak.png"],
-  ["Sacred Gate", "image/icon/Sacred_gate.png"],
-  ["SG Campus", "image/icon/Sacred_gate.png"],
-  ["Phoenix", "image/icon/Phoenix.png"],
+  ["Mystic Peak", "Mystic_Peak.png"],
+  ["MP Campus", "Mystic_Peak.png"],
+  ["Sacred Gate", "Sacred_gate.png"],
+  ["SG Campus", "Sacred_gate.png"],
+  ["Phoenix", "Phoenix.png"],
   
 ];
 
@@ -175,13 +175,13 @@ const MAP_ICON_MAP = [
    entries here as more location backgrounds are provided (Phoenix,
    Sacred Gate, etc). */
 const PANEL_BG_MAP = [
-  ["Mystic Peak Hole", "image/map/mystic.png"],
-  ["MP Campus", "image/map/mystic_bg.png"],
-  ["Phoenix Hole", "image/map/phoenix_hole_bg.png"],
-  ["Phoenix Campus", "image/map/phc_bg.png"],
-  ["Sacred Gate Hole", "image/map/sacredgate_bg.png"],
-  ["SG Campus", "image/map/sg_campus_bg.png"],
-  ["Practicing Yard", "image/map/Practicing_Yard_BG.png"],
+  ["Mystic Peak Hole", "mystic.png"],
+  ["MP Campus", "mystic_bg.png"],
+  ["Phoenix Hole", "phoenix_hole_bg.png"],
+  ["Phoenix Campus", "phc_bg.png"],
+  ["Sacred Gate Hole", "sacredgate_bg.png"],
+  ["SG Campus", "sg_campus_bg.png"],
+  ["Practicing Yard", "Practicing_Yard_BG.png"],
 ];
 
 function getPanelBg(location){
