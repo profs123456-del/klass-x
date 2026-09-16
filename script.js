@@ -164,7 +164,7 @@ function getBossBg(b){
 const MAP_ICON_MAP = [
   ["Mystic Peak", "Mystic_Peak.png"],
   ["MP Campus", "Mystic_Peak.png"],
-  ["Sacred Gate", "Sacred_gate.png"],
+  ["Sacred Gate Hole", "Sacred_gate.png"],
   ["SG Campus", "Sacred_gate.png"],
   ["Phoenix", "Phoenix.png"],
   
