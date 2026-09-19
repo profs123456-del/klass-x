@@ -842,12 +842,14 @@ body::before{
   pointer-events:none;
 }
 .card-location{
-  font-size:12px;
+  font-size:15px;
   letter-spacing:.5px;
   color:var(--glow);
   font-family:'Rajdhani', sans-serif;
   font-weight:700;
   margin-top:-2px;
+  text-shadow:0 2px 6px rgba(0,0,0,.85);
+  line-height:1.2;
 }
 .card-art-info{
   position:absolute;
