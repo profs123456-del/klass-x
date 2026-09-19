@@ -220,6 +220,81 @@ body::before{
 }
 .nav-ico{width:18px; text-align:center; flex-shrink:0;}
 
+/* ---- TRASH BIN (drag a boss card here to reset it) ---- */
+.trash-bin{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:16px 8px;
+  border:2px dashed var(--border);
+  border-radius:12px;
+  color:var(--text2);
+  font-family:'Orbitron', sans-serif;
+  font-size:9.5px;
+  letter-spacing:1px;
+  text-align:center;
+  line-height:1.5;
+  transition:.2s;
+  user-select:none;
+}
+.trash-ico{font-size:22px; transition:.2s;}
+.trash-bin.drag-over{
+  border-color:var(--danger);
+  border-style:solid;
+  color:var(--danger);
+  background:rgba(239,68,68,.1);
+  box-shadow:0 0 16px rgba(239,68,68,.35);
+  transform:scale(1.04);
+}
+.trash-bin.drag-over .trash-ico{transform:scale(1.15);}
+
+/* ---- CARD DRAG HANDLE (grip icon used to drag a card to the trash) ---- */
+.card-drag-handle{
+  position:absolute;
+  top:8px;
+  right:8px;
+  z-index:3;
+  width:44px;
+  height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:rgba(0,0,0,.55);
+  border:1.5px solid var(--card-accent);
+  color:var(--card-accent);
+  font-size:26px;
+  line-height:1;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+}
+.card-drag-handle:hover{background:rgba(0,0,0,.75); filter:brightness(1.2);}
+.card-drag-handle:active{cursor:grabbing;}
+.card.dragging-source{opacity:.35; filter:grayscale(.4);}
+
+.drag-ghost{
+  position:fixed;
+  top:0; left:0;
+  z-index:99999;
+  pointer-events:none;
+  padding:10px 16px;
+  border-radius:12px;
+  background:var(--card);
+  border:2px solid var(--card-accent);
+  color:#fff;
+  font-family:'Orbitron', sans-serif;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.5px;
+  white-space:nowrap;
+  box-shadow:0 10px 24px rgba(0,0,0,.5), 0 0 16px var(--card-accent-glow);
+  transform:translate(-50%,-50%);
+}
+
 /* =========================
    MAIN COLUMN
    ========================= */
@@ -632,7 +707,11 @@ body::before{
   border-bottom:none;
   flex:0 0 auto;
 }
-.boss-search-wrap{position:relative; flex:0 1 200px; min-width:140px;}
+.boss-search-wrap{position:relative; flex:0 1 220px; min-width:160px;}
+.section-header-controls .boss-search-wrap{flex:0 1 240px; min-width:180px; margin-left:auto;}
+@media (max-width:640px){
+  .section-header-controls .boss-search-wrap{margin-left:0; flex:1 1 100%;}
+}
 .boss-search-icon{
   position:absolute;
   top:50%; left:11px;
@@ -885,8 +964,8 @@ button{
 button:hover{transform:translateY(-1px); filter:brightness(1.15);}
 button:active{transform:translateY(0); filter:brightness(.92);}
 
-.set-manual{background:transparent; border:1px solid var(--border); color:var(--text2);}
-.set-manual:hover{border-color:var(--card-accent); color:var(--card-accent);}
+.set-manual{background:rgba(255,255,255,.05); border:1px solid rgba(148,163,184,.45); color:var(--text);}
+.set-manual:hover{background:rgba(255,255,255,.09); border-color:var(--card-accent); color:var(--card-accent);}
 .killed-now{
   background:linear-gradient(180deg, var(--card-accent) 0%, var(--card-accent-dim) 100%);
   border-color:var(--card-accent);
@@ -1098,6 +1177,8 @@ button:active{transform:translateY(0); filter:brightness(.92);}
     gap:8px;
   }
   .nav-item{flex:0 0 auto; padding:10px 12px;}
+  .trash-bin{flex:0 0 auto; margin-top:0; padding:10px 14px; flex-direction:row; gap:8px;}
+  .trash-label{line-height:1.2;}
   .brand-nav{display:none;}
   .hero-row{flex-direction:column; align-items:stretch;}
   .hero-left,.hero-timer-block,.hero-art{flex:1 1 auto; width:100%;}
