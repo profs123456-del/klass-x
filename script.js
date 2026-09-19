@@ -326,8 +326,8 @@ bosses.forEach(b => {
         step="1">
       </div>
 
-      <button class="killed-now" onclick="now('${b.id}',${b.respawn})">Killed Now</button>
       <button class="set-manual" onclick="manual('${b.id}',${b.respawn})">Set Manual</button>
+      <button class="killed-now" onclick="now('${b.id}',${b.respawn})">Killed Now</button>
     </div>
   `;
   document.getElementById("channel-" + BOSS_SECTION_KEY + "-body").appendChild(card);
