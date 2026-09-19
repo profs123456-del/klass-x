@@ -1,1329 +1,1413 @@
-:root{
-  /* KLASS X — dark blue / purple / cyan palette */
-  --bg:#070814;
-  --panel:#0F172A;
-  --card:#111827;
-  --border:#1E2A3A;
-  --blue:#3B82F6;
-  --purple:#8B5CF6;
-  --text:#F1F5F9;
-  --text2:#94A3B8;
-  --success:#22C55E;
-  --warning:#F59E0B;
-  --danger:#EF4444;
-  --glow:#38BDF8;
+/* =========================
+   ✅ FIREBASE CONFIG
+   ========================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCN2z5hKD5Tp9Ji2MQhpK3aUe2waoxvKOA",
+  authDomain: "klass-x.firebaseapp.com",
+  databaseURL: "https://klass-x-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "klass-x",
+  storageBucket: "klass-x.firebasestorage.app",
+  messagingSenderId: "760760762940",
+  appId: "1:760760762940:web:9f8e96a8c041e34ec8b939"
+};
 
-  /* legacy names still referenced by a few rules below */
-  --gold:#F59E0B;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  /* Unified boss-card accent — same color family on every card,
-     regardless of boss type. Crimson/ember, matches the reference
-     "Killed Now" card style. */
-  --card-accent:#2F8FFF;
-  --card-accent-dim:#1D5FCC;
-  --card-accent-glow:rgba(47,143,255,.45);
-}
+/* ✅ SERVER TIME SYNC (fix +12 sec issues) */
+let serverOffset = 0;
+let serverReady = false;
 
-*{box-sizing:border-box}
-
-/* No accidental text-selection while interacting with the tracker —
-   inputs are excluded further down so typing/selecting still works. */
-body, button, h1, h2, h3, h4, .card, .channel-header, .channel-title,
-#channelsWrapper, .channel-body, #historyPanel, #historyList,
-#bossFilterPanel, #hourPillRow, #channelPillRow, #respawnFilterDock,
-#nextBossPanel, #sideNav, #topBar{
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-}
-
-html{background:var(--bg);}
-
-body{
-  margin:0;
-  color:var(--text);
-  font-family:'Rajdhani',sans-serif;
-  min-height:100vh;
-  background:var(--bg);
-  overflow-x:hidden;
-}
-
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:
-    radial-gradient(circle at 18% 18%,rgba(59,130,246,.14),transparent 38%),
-    radial-gradient(circle at 82% 75%,rgba(139,92,246,.12),transparent 38%);
-  pointer-events:none;
-  z-index:0;
-  animation:bgMove 14s ease-in-out infinite alternate;
-}
-@keyframes bgMove{
-  0%{transform:translate(0,0);}
-  100%{transform:translate(-40px,-20px);}
-}
-
-#appShell{position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column;}
+db.ref(".info/serverTimeOffset").on("value", snap => {
+  serverOffset = snap.val() || 0;
+  serverReady = true;
+});
 
 /* =========================
-   TOP BAR
+   ✅ SETTINGS
    ========================= */
-#topBar{
-  position:sticky;
-  top:0;
-  z-index:200;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  padding:14px 28px;
-  background:linear-gradient(120deg,#0a0f1e 0%,#0f1830 55%,#111c36 100%);
-  border-bottom:2px solid var(--border);
-  box-shadow:0 6px 24px rgba(0,0,0,.45);
-}
+const HISTORY_LIMIT = 400;     // show last 200 logs
+const ADMIN_PIN = "tracker";      // change this
 
-.topbar-left{
-  display:flex;
-  align-items:center;
-  gap:16px;
-  min-width:0;
-}
-
-#rightLogo{
-  width:46px;
-  height:46px;
-  flex-shrink:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-#rightLogo img{max-width:100%; max-height:100%; filter:none;}
-
-.brand-text{display:flex; flex-direction:column; line-height:1.1;}
-.brand-title{
-  font-family:'Orbitron', sans-serif;
-  font-weight:900;
-  font-size:24px;
-  letter-spacing:1px;
-  color:#fff;
-}
-/* "UNGOVERNED" wordmark treatment: UN outlined in cyan, GOVERN solid
-   white, ED solid pink — matches the UNGOVERNED brand logo. */
-.brand-un{
-  color:transparent;
-  -webkit-text-stroke:1.5px var(--glow);
-  text-stroke:1.5px var(--glow);
-}
-.brand-govern{color:#fff;}
-.brand-ed{color:#EC4899;}
-.brand-sub{
-  font-family:'Orbitron', sans-serif;
-  font-size:9px;
-  letter-spacing:4px;
-  color:var(--text2);
-  margin-top:2px;
-}
-
-.brand-nav{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-family:'Orbitron', sans-serif;
-  font-size:11px;
-  letter-spacing:3px;
-  color:var(--text2);
-  padding-left:16px;
-  border-left:1px solid var(--border);
-}
-.brand-nav i{color:var(--border); font-style:normal;}
-
-.topbar-right{display:flex; align-items:center; gap:12px; flex-shrink:0;}
-
-.server-pill,.clock-pill{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:rgba(255,255,255,.04);
-  border:1px solid var(--border);
-  padding:8px 14px;
-  border-radius:20px;
-  font-family:'Orbitron', sans-serif;
-  font-size:11px;
-  letter-spacing:1px;
-  color:var(--text2);
-  white-space:nowrap;
-}
-.clock-pill{color:var(--text); font-weight:700; font-variant-numeric:tabular-nums;}
-#liveDate{color:var(--text2); font-weight:400; font-size:10px; margin-left:2px;}
-
-.dot{
-  width:8px; height:8px; border-radius:50%;
-  background:var(--success);
-  box-shadow:0 0 8px var(--success);
-  flex-shrink:0;
-}
-.dot.off{background:var(--text2); box-shadow:none; animation:none;}
-.dot.syncing{background:var(--warning); box-shadow:0 0 8px var(--warning); animation:dangerPulse 1.2s infinite;}
+let inputLock = false;
+document.addEventListener("focusin", e => { if (e.target.type === "datetime-local") inputLock = true; });
+document.addEventListener("focusout", e => { if (e.target.type === "datetime-local") inputLock = false; });
 
 /* =========================
-   APP BODY GRID
+   ✅ BOSS PANEL
+   One combined panel (was 4 separate CHANNEL 0-3 panels).
+   Which channel a card belongs to is now shown on the card
+   itself and controlled via the BOSSES & RESPAWN TIME filter.
    ========================= */
-#appBody{
-  flex:1;
-  display:grid;
-  grid-template-columns:216px minmax(0,1fr) 360px;
-  gap:22px;
-  padding:22px 28px 12px;
-  align-items:start;
-}
+const BOSS_SECTION_KEY = "bosses";
 
-/* =========================
-   LEFT SIDE NAV
-   ========================= */
-#sideNav{
-  position:sticky;
-  top:96px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:14px;
-}
-.nav-item{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  width:100%;
-  margin:0;
-  background:transparent;
-  border:none;
-  color:var(--text2);
-  font-family:'Orbitron', sans-serif;
-  font-size:12px;
-  letter-spacing:1px;
-  padding:12px 14px;
-  border-radius:10px;
-  cursor:pointer;
-  text-align:left;
-  box-shadow:none;
-  transition:.2s;
-}
-.nav-item:hover{background:rgba(59,130,246,.1); color:var(--text); transform:none; filter:none; box-shadow:none;}
-.nav-item.active{
-  background:linear-gradient(90deg,var(--blue),#2563eb);
-  color:#fff;
-  box-shadow:0 4px 14px rgba(59,130,246,.35);
-}
-.nav-ico{width:18px; text-align:center; flex-shrink:0;}
+/* Each boss entry has its own independent `respawn` value, in MINUTES.
+   This is what makes different respawn intervals per boss possible —
+   e.g. Darkswordsman Jr. (respawn:60 = 1 hour) and Etherial Fist
+   (respawn:120 = 2 hours) each count down on their own schedule.
+   Cheat sheet: 60=1h, 90=1.5h, 120=2h, 180=3h, 240=4h, 360=6h, 480=8h,
+   720=12h. When changing a boss's respawn time, update it on ALL of
+   that boss's channel lines (CH-0/CH-1/CH-2/CH-3) below, and keep the
+   matching entry in BOSS_CATEGORIES (further down) in sync too, since
+   that's what drives the respawn-time filter dropdown's label/grouping. */
+const bosses = [
+  {id:"1",name:"Darkswordsman Jr.",location:"Mystic Peak Hole",fullName:"CH-0 Darkswordsman Jr. - Mystic Peak Hole.",channel:0,respawn:60},
+  {id:"2",name:"Darkswordsman Jr.",location:"Phoenix Hole",fullName:"CH-0 Darkswordsman Jr. - Phoenix Hole.",channel:0,respawn:60},
+  {id:"3",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-0 Darkswordsman Jr. - SGe Campus.",channel:0,respawn:60},
+  {id:"4",name:"Darkswordsman Jr.",location:"MP Campus",fullName:"CH-0 Darkswordsman Jr. - MP Campus.",channel:0,respawn:60},
+  {id:"5",name:"Darkswordsman Jr.",location:"Phoenix Campus",fullName:"CH-0 Darkswordsman Jr. - Phoenix Campus.",channel:0,respawn:60},
+  {id:"6",name:"Etherial Fist",location:"Mystic Peak Hole",fullName:"CH-0 Etherial Fist - Mystic Peak Hole.",channel:0,respawn:120},
+  {id:"7",name:"Etherial Fist",location:"Phoenix Hole",fullName:"CH-0 Etherial Fist - Phoenix Hole.",channel:0,respawn:120},
+  {id:"8",name:"Etherial Fist",location:"Sacred Gate Hole",fullName:"CH-0 Etherial Fist - Sacred Gate Hole.",channel:0,respawn:120},
+  {id:"9",name:"Ninja Knife",location:"Sacred Gate Hole",fullName:"CH-0 Ninja Knife - Sacred Gate HOle.",channel:0,respawn:120},
+  {id:"10",name:"Dark Swordsman",location:"Sacred Gate Hole",fullName:"CH-0 Dark Swordsman - Sacred Gate Hole.",channel:0,respawn:120},
+  {id:"11",name:"Dark Art Master",location:"Leonine Campus B3",fullName:"CH-0 Dark Art Master - Leonine Campus B3",channel:0,respawn:360},
+  {id:"12",name:"Cruel Jupiter",location:"Practicing Yard",fullName:"CH-0 Cruel Jupiter- Practicing Yard",channel:0,respawn:480},
+  {id:"13",name:"Darkswordsman Jr.",location:"Mystic Peak Hole",fullName:"CH-1 Darkswordsman Jr. - Mystic Peak Hole.",channel:1,respawn:60},
+  {id:"14",name:"Darkswordsman Jr.",location:"Phoenix Hole",fullName:"CH-1 Darkswordsman Jr. - Phoenix Hole.",channel:1,respawn:60},
+  {id:"15",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-1 Darkswordsman Jr. - SG Campus.",channel:1,respawn:60},
+  {id:"16",name:"Darkswordsman Jr.",location:"MP Campus",fullName:"CH-1 Darkswordsman Jr. - MP Campus.",channel:1,respawn:60},
+  {id:"17",name:"Darkswordsman Jr.",location:"Phoenix Campus",fullName:"CH-1 Darkswordsman Jr. - Phoenix Campus.",channel:1,respawn:60},
+  {id:"18",name:"Etherial Fist",location:"Mystic Peak Hole",fullName:"CH-1 Etherial Fist - Mystic Peak Hole.",channel:1,respawn:120},
+  {id:"19",name:"Etherial Fist",location:"Phoenix Hole",fullName:"CH-1 Etherial Fist - Phoenix Hole.",channel:1,respawn:120},
+  {id:"20",name:"Etherial Fist",location:"Sacred Gate Hole",fullName:"CH-1 Etherial Fist - Sacred Gate Hole.",channel:1,respawn:120},
+  {id:"21",name:"Ninja Knife",location:"Sacred Gate Hole",fullName:"CH-1 Ninja Knife - Sacred Gate HOle.",channel:1,respawn:120},
+  {id:"22",name:"Dark Swordsman",location:"Sacred Gate Hole",fullName:"CH-1 Dark Swordsman - Sacred Gate Hole.",channel:1,respawn:120},
+  {id:"23",name:"Dark Art Master",location:"Leonine Campus B3",fullName:"CH-1 Dark Art Master - Leonine Campus B3",channel:1,respawn:360},
+  {id:"24",name:"Cruel Jupiter",location:"Practicing Yard",fullName:"CH-0 Cruel Jupiter- Practicing Yard",channel:1,respawn:480},
+  {id:"25",name:"Darkswordsman Jr.",location:"Mystic Peak Hole",fullName:"CH-2 Darkswordsman Jr. - Mystic Peak Hole.",channel:2,respawn:60},
+  {id:"26",name:"Darkswordsman Jr.",location:"Phoenix Hole",fullName:"CH-2 Darkswordsman Jr. - Phoenix Hole.",channel:2,respawn:60},
+  {id:"27",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-2 Darkswordsman Jr. - SG Campus.",channel:2,respawn:60},
+  {id:"28",name:"Darkswordsman Jr.",location:"MP Campus",fullName:"CH-2 Darkswordsman Jr. - MP Campus.",channel:2,respawn:60},
+  {id:"29",name:"Darkswordsman Jr.",location:"Phoenix Campus",fullName:"CH-2 Darkswordsman Jr. - Phoenix Campus.",channel:2,respawn:60},
+  {id:"30",name:"Etherial Fist",location:"Mystic Peak Hole",fullName:"CH-2 Etherial Fist - Mystic Peak Hole.",channel:2,respawn:120},
+  {id:"31",name:"Etherial Fist",location:"Phoenix Hole",fullName:"CH-2 Etherial Fist - Phoenix Hole.",channel:2,respawn:120},
+  {id:"32",name:"Etherial Fist",location:"Sacred Gate Hole",fullName:"CH-2 Etherial Fist - Sacred Gate Hole.",channel:2,respawn:120},
+  {id:"33",name:"Ninja Knife",location:"Sacred Gate Hole",fullName:"CH-2 Ninja Knife - Sacred Gate HOle.",channel:2,respawn:120},
+  {id:"34",name:"Dark Swordsman",location:"Sacred Gate Hole",fullName:"CH-2 Dark Swordsman - Sacred Gate Hole.",channel:2,respawn:120},
+  {id:"35",name:"Dark Art Master",location:"Leonine Campus B3",fullName:"CH-2 Dark Art Master - Leonine Campus B3",channel:2,respawn:360},
+  {id:"36",name:"Cruel Jupiter",location:"Practicing Yard",fullName:"CH-2 Cruel Jupiter- Practicing Yard",channel:2,respawn:480},
+  {id:"37",name:"Darkswordsman Jr.",location:"Mystic Peak Hole",fullName:"CH-3 Darkswordsman Jr. - Mystic Peak Hole.",channel:3,respawn:60},
+  {id:"38",name:"Darkswordsman Jr.",location:"Phoenix Hole",fullName:"CH-3 Darkswordsman Jr. - Phoenix Hole.",channel:3,respawn:60},
+  {id:"39",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-3 Darkswordsman Jr. - SG Campus.",channel:3,respawn:60},
+  {id:"40",name:"Darkswordsman Jr.",location:"MP Campus",fullName:"CH-3 Darkswordsman Jr. - MP Campus.",channel:3,respawn:60},
+  {id:"41",name:"Darkswordsman Jr.",location:"Phoenix Campus",fullName:"CH-3 Darkswordsman Jr. - Phoenix Campus.",channel:3,respawn:60},
+  {id:"42",name:"Etherial Fist",location:"Mystic Peak Hole",fullName:"CH-3 Etherial Fist - Mystic Peak Hole.",channel:3,respawn:120},
+  {id:"43",name:"Etherial Fist",location:"Phoenix Hole",fullName:"CH-3 Etherial Fist - Phoenix Hole.",channel:3,respawn:120},
+  {id:"44",name:"Etherial Fist",location:"Sacred Gate Hole",fullName:"CH-3 Etherial Fist - Sacred Gate Hole.",channel:3,respawn:120},
+  {id:"45",name:"Ninja Knife",location:"Sacred Gate Hole",fullName:"CH-3 Ninja Knife - Sacred Gate HOle.",channel:3,respawn:120},
+  {id:"46",name:"Dark Swordsman",location:"Sacred Gate Hole",fullName:"CH-3 Dark Swordsman - Sacred Gate Hole.",channel:3,respawn:120},
+  {id:"47",name:"Dark Art Master",location:"Leonine Campus B3",fullName:"CH-3 Dark Art Master - Leonine Campus B3",channel:3,respawn:360},
+  {id:"48",name:"Cruel Jupiter",location:"Practicing Yard",fullName:"CH-3 Cruel Jupiter- Practicing Yard",channel:3,respawn:480},
+];
 
-/* ---- TRASH BIN (drag a boss card here to reset it) ---- */
-.trash-bin{
-  margin-top:8px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  padding:16px 8px;
-  border:2px dashed var(--border);
-  border-radius:12px;
-  color:var(--text2);
-  font-family:'Orbitron', sans-serif;
-  font-size:9.5px;
-  letter-spacing:1px;
-  text-align:center;
-  line-height:1.5;
-  transition:.2s;
-  user-select:none;
-}
-.trash-ico{font-size:22px; transition:.2s;}
-.trash-bin.drag-over{
-  border-color:var(--danger);
-  border-style:solid;
-  color:var(--danger);
-  background:rgba(239,68,68,.1);
-  box-shadow:0 0 16px rgba(239,68,68,.35);
-  transform:scale(1.04);
-}
-.trash-bin.drag-over .trash-ico{transform:scale(1.15);}
+/* Map of boss-name substring -> background image file.
+   (Replaces the long chain of duplicated if-statements from the original file.) */
+const BOSS_BG_MAP = [
+  ["Darkswordsman Jr.", "ds jr.png"],
+  ["Etherial Fist", "EF.png"],
+  ["Ninja Knife", "NK.png"],
+  ["Dark Swordsman", "Dark_Swordsman.png"],
+  ["Dark Art Master", "dam.png"],
+  ["Cruel Jupiter", "cj enhance.png"],
+];
 
-/* ---- CARD DRAG HANDLE (grip icon used to drag a card to the trash) ---- */
-.card-drag-handle{
-  position:absolute;
-  top:8px;
-  right:8px;
-  z-index:3;
-  width:44px;
-  height:44px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:12px;
-  background:rgba(0,0,0,.55);
-  border:1.5px solid var(--card-accent);
-  color:var(--card-accent);
-  font-size:26px;
-  line-height:1;
-  cursor:grab;
-  touch-action:none;
-  user-select:none;
-}
-.card-drag-handle:hover{background:rgba(0,0,0,.75); filter:brightness(1.2);}
-.card-drag-handle:active{cursor:grabbing;}
-.card.dragging-source{opacity:.35; filter:grayscale(.4);}
+/* Per-location art overrides. Checked before BOSS_BG_MAP, so a specific
+   school/location can get unique art instead of the species' generic
+   background. Keyed by the boss's `location` field. */
+const LOCATION_BG_MAP = [
+  ["MP Campus", "mystic_bg.png"],
+];
 
-.drag-ghost{
-  position:fixed;
-  top:0; left:0;
-  z-index:99999;
-  pointer-events:none;
-  padding:10px 16px;
-  border-radius:12px;
-  background:var(--card);
-  border:2px solid var(--card-accent);
-  color:#fff;
-  font-family:'Orbitron', sans-serif;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.5px;
-  white-space:nowrap;
-  box-shadow:0 10px 24px rgba(0,0,0,.5), 0 0 16px var(--card-accent-glow);
-  transform:translate(-50%,-50%);
-}
+/* Per boss+location art (the actual in-game render screenshots).
+   Checked BEFORE the generic LOCATION_BG_MAP/BOSS_BG_MAP, since some
+   locations (e.g. "Phoenix Hole") are shared by more than one boss
+   species and need to resolve to different art per species. */
+const BOSS_LOCATION_ART_MAP = [
+  { name: "Darkswordsman Jr.", location: "MP Campus",    file: "MP_Campdsjr.png" },
+  { name: "Darkswordsman Jr.", location: "Mystic Peak Hole",    file: "Mystic_Peak_Hole.png" },
+  { name: "Darkswordsman Jr.", location: "Phoenix Hole",        file: "Phoenix_Hole_DS.png" },
+  { name: "Darkswordsman Jr.", location: "SG Campus",  file: "Sacred_Gate_Dsjr_.png" },
+  { name: "Darkswordsman Jr.", location: "Phoenix Campus",      file: "Phoenix_Campus_DS.png" },
+  { name: "Etherial Fist",     location: "Mystic Peak Hole",    file: "Etherial_Fist_MP.png" },
+  { name: "Etherial Fist",     location: "Phoenix Hole",        file: "Etherial_Fist_PH.png" },
+  { name: "Etherial Fist",     location: "Sacred Gate Hole",        file: "Etherial_Fist_SG.png" },
+  { name: "Ninja Knife",       location: "Sacred Gate Hole",                  file: "Ninja_Knife.png" },
+  { name: "Dark Swordsman",       location: "Sacred Gate Hole",                  file: "Dark_Swordsman.png" },
+  { name: "Dark Art Master",       location: "Leonine Campus B3",                  file: "dam.png" },
+  { name: "Cruel Jupiter",       location: "Practicing Yard",                  file: "cj enhance.png" },
+];
 
-/* =========================
-   MAIN COLUMN
-   ========================= */
-#mainCol{display:flex; flex-direction:column; gap:22px; min-width:0;}
+function getBossBg(b){
+  const name = typeof b === "string" ? b : b.name;
+  const location = typeof b === "string" ? b : b.location;
 
-/* ---- HERO / NEXT SPAWN ---- */
-#nextBossPanel{
-  width:100%;
-  background:linear-gradient(135deg,var(--panel) 0%,#0b1220 100%);
-  border:2px solid var(--blue);
-  border-radius:18px;
-  padding:22px 26px;
-  box-shadow:0 0 0 1px rgba(59,130,246,.12) inset, 0 18px 36px rgba(0,0,0,.4);
-  position:relative;
-  overflow:hidden;
-}
-/* Ambient glow blobs + faint grid texture so the panel doesn't read as
-   empty dark space — purely decorative, sits behind all real content. */
-#nextBossPanel::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background-image:
-    linear-gradient(rgba(56,189,248,.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56,189,248,.05) 1px, transparent 1px);
-  background-size:26px 26px;
-  mask-image:radial-gradient(ellipse at 30% 30%, rgba(0,0,0,.9) 0%, rgba(0,0,0,.15) 70%);
-  -webkit-mask-image:radial-gradient(ellipse at 30% 30%, rgba(0,0,0,.9) 0%, rgba(0,0,0,.15) 70%);
-  z-index:0;
-  pointer-events:none;
-}
-#nextBossPanel::after{
-  content:"";
-  position:absolute;
-  top:-90px; right:-70px;
-  width:280px; height:280px;
-  border-radius:50%;
-  background:radial-gradient(circle, rgba(56,189,248,.28) 0%, rgba(56,189,248,0) 70%);
-  z-index:0;
-  pointer-events:none;
-}
-#nextBossPanel > *{position:relative; z-index:1;}
+  const exactHit = BOSS_LOCATION_ART_MAP.find(entry =>
+    name.includes(entry.name) &&
+    (entry.location === null || (location && location.includes(entry.location)))
+  );
+  if(exactHit) return exactHit.file;
 
-/* Higher specificity than the rule above, so the live badge keeps its
-   own absolute corner position instead of being pulled back into
-   normal document flow (which was causing it to overlap "NEXT SPAWN"). */
-#nextBossPanel > .hero-live-badge{position:absolute; z-index:2;}
-
-.hero-live-badge{
-  position:absolute;
-  top:16px;
-  left:22px;
-  z-index:2;
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  font-family:'Orbitron', sans-serif;
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:2px;
-  color:var(--glow);
-  background:rgba(56,189,248,.1);
-  border:1px solid rgba(56,189,248,.4);
-  padding:5px 11px;
-  border-radius:20px;
-}
-.hero-live-dot{
-  width:7px; height:7px;
-  border-radius:50%;
-  background:#22C55E;
-  box-shadow:0 0 8px #22C55E;
-  animation:heroLivePulse 1.6s ease-in-out infinite;
-}
-@keyframes heroLivePulse{
-  0%,100%{ opacity:1; transform:scale(1); }
-  50%{ opacity:.4; transform:scale(.7); }
-}
-
-.hero-row{display:flex; align-items:center; gap:26px; flex-wrap:wrap; margin-top:32px;}
-
-.hero-left{flex:0 0 200px; min-width:180px;}
-#nextBossPanel h3{
-  margin:0 0 8px;
-  font-family:'Orbitron', sans-serif;
-  font-size:12px;
-  letter-spacing:3px;
-  color:var(--text2);
-  text-align:left;
-  padding:0;
-  background:none;
-  border:none;
-}
-#nextBossName{
-  font-family:'Orbitron', sans-serif;
-  font-weight:800;
-  font-size:28px;
-  color:#fff;
-  letter-spacing:.5px;
-  margin:2px 0 10px;
-  text-align:left;
-}
-.hero-ch-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:rgba(0,0,0,.35);
-  border:1px solid var(--ch-color, var(--warning));
-  color:var(--ch-color, var(--warning));
-  box-shadow:0 0 10px var(--ch-glow, transparent);
-  font-family:'Orbitron', sans-serif;
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:1px;
-  padding:6px 12px;
-  border-radius:8px;
-}
-.hero-ch-badge.ch-0{--ch-color:#38BDF8; --ch-glow:rgba(56,189,248,.45);}
-.hero-ch-badge.ch-1{--ch-color:#22C55E; --ch-glow:rgba(34,197,94,.45);}
-.hero-ch-badge.ch-2{--ch-color:#F59E0B; --ch-glow:rgba(245,158,11,.45);}
-.hero-ch-badge.ch-3{--ch-color:#EC4899; --ch-glow:rgba(236,72,153,.45);}
-
-.hero-timer-block{flex:1 1 220px; text-align:center; min-width:200px; position:relative;}
-.hero-timer-block::before{
-  content:"";
-  position:absolute;
-  top:50%; left:50%;
-  width:260px; height:120px;
-  transform:translate(-50%,-50%);
-  background:radial-gradient(ellipse, rgba(56,189,248,.16) 0%, rgba(56,189,248,0) 70%);
-  z-index:-1;
-  pointer-events:none;
-}
-#nextBossTimer{
-  font-family:'Orbitron', sans-serif;
-  font-weight:900;
-  font-size:clamp(38px,5.2vw,58px);
-  color:#fff;
-  letter-spacing:2px;
-  line-height:1;
-  text-shadow:0 0 24px rgba(56,189,248,.45);
-  margin:0;
-  padding:0;
-}
-.hero-timer-labels{
-  display:flex;
-  justify-content:center;
-  gap:34px;
-  margin-top:6px;
-  font-family:'Orbitron', sans-serif;
-  font-size:10px;
-  letter-spacing:3px;
-  color:var(--text2);
-}
-
-.hero-art{
-  flex:0 0 300px;
-  height:220px;
-  border-radius:14px;
-  background-size:cover;
-  background-position:right top;
-  background-color:rgba(255,255,255,.03);
-  border:1px solid var(--border);
-  position:relative;
-  overflow:hidden;
-}
-.hero-art::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg, rgba(7,8,20,.85) 0%, rgba(7,8,20,.15) 55%, rgba(7,8,20,.55) 100%);
-}
-.hero-map-icon{
-  display:none;
-  position:absolute;
-  top:10px;
-  left:10px;
-  width:62px;
-  height:62px;
-  z-index:2;
-  object-fit:contain;
-  filter:drop-shadow(0 3px 8px rgba(0,0,0,.7));
-}
-.hero-location{
-  font-family:'Rajdhani', sans-serif;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.5px;
-  color:var(--glow);
-  margin:-6px 0 10px;
-  text-align:left;
-}
-.hero-art-caption{
-  position:absolute;
-  right:10px;
-  bottom:8px;
-  z-index:1;
-  font-family:'Rajdhani', sans-serif;
-  font-style:italic;
-  font-weight:700;
-  font-size:13px;
-  line-height:1.25;
-  text-align:right;
-  color:rgba(255,255,255,.9);
-  text-shadow:0 2px 6px rgba(0,0,0,.85);
-}
-
-.hero-progress{
-  margin-top:18px;
-  height:8px;
-  border-radius:6px;
-  background:rgba(255,255,255,.06);
-  overflow:hidden;
-}
-.hero-progress-bar{
-  height:100%;
-  width:0%;
-  border-radius:6px;
-  background:linear-gradient(90deg,var(--blue),var(--glow));
-  transition:width 1s linear;
-}
-
-#nextBossTime{
-  margin-top:12px;
-  font-family:'Rajdhani', sans-serif;
-  font-size:13px;
-  font-weight:600;
-  letter-spacing:.4px;
-  color:var(--glow);
-  opacity:.9;
-  text-align:left;
-  padding:0;
-}
-
-@keyframes dangerPulse{
-  0%{opacity:1;}
-  50%{opacity:.5;}
-  100%{opacity:1;}
-}
-#nextBossTimer.danger{color:var(--danger) !important; animation:dangerPulse 1.1s infinite;}
-
-/* ---- BOSSES SECTION ---- */
-#bossesSection{width:100%;}
-
-.section-header{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:12px;
-  margin-bottom:16px;
-}
-.section-header h3{
-  margin:0;
-  font-family:'Orbitron', sans-serif;
-  font-size:16px;
-  font-weight:800;
-  letter-spacing:3px;
-  color:#fff;
-}
-.section-header-controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%;}
-
-.control-bar{
-  width:auto;
-  height:auto;
-  margin:0;
-  padding:10px 16px;
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:1px;
-  border-radius:10px;
-  font-family:'Orbitron', sans-serif;
-  cursor:pointer;
-  transition:.2s;
-  background:var(--panel);
-  border:1px solid var(--border);
-  color:var(--text2);
-  box-shadow:none;
-}
-.control-bar:hover{transform:translateY(-1px); filter:brightness(1.15);}
-
-.control-sort{background:rgba(56,189,248,.14); border-color:var(--glow); color:var(--glow);}
-.control-sort.off{background:rgba(148,163,184,.1); border-color:var(--border); color:var(--text2);}
-.control-sound{background:rgba(56,189,248,.14); border-color:var(--glow); color:var(--glow);}
-.control-sound.off{background:rgba(148,163,184,.1); border-color:var(--border); color:var(--text2);}
-.control-reset{background:rgba(56,189,248,.14); border-color:var(--glow); color:var(--glow);}
-.control-reset:hover{background:rgba(239,68,68,.16); border-color:var(--danger); color:var(--danger);}
-
-.control-sort::before{content:"🔀 ";}
-.control-reset::before{content:"♻️ ";}
-.control-sound::before{content:"🔔 ";}
-
-.respawn-filter-btn{
-  width:auto;
-  margin:0;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:10px 16px;
-  background:rgba(56,189,248,.14);
-  color:var(--glow);
-  border:1px solid var(--glow);
-  border-radius:10px;
-  font-size:11px;
-  font-weight:800;
-  font-family:'Orbitron', sans-serif;
-  letter-spacing:1px;
-  cursor:pointer;
-  box-shadow:none;
-  transition:.2s;
-}
-.respawn-filter-btn:hover{transform:translateY(-1px); filter:brightness(1.15);}
-.respawn-filter-btn .rf-arrow{transition:.2s;}
-#respawnFilterDock.open .respawn-filter-btn .rf-arrow{transform:rotate(180deg);}
-.rf-icon{}
-
-#respawnFilterDock{width:100%;}
-#bossFilterPanel{
-  display:none;
-  width:100%;
-  max-height:420px;
-  overflow-y:auto;
-  touch-action:pan-y;
-  margin-bottom:16px;
-  background:var(--panel);
-  border:1px solid var(--glow);
-  border-radius:15px;
-  padding:0 0 14px;
-}
-#respawnFilterDock.open #bossFilterPanel{display:block;}
-
-#hourPillRow{display:flex; flex-wrap:wrap; gap:8px; padding:14px 14px 12px;}
-.hour-pill{
-  flex:0 0 auto;
-  width:auto;
-  margin:0;
-  padding:8px 12px;
-  border-radius:20px;
-  border:1px solid rgba(59,130,246,.4);
-  background:rgba(59,130,246,.06);
-  color:var(--glow);
-  font-family:'Orbitron', sans-serif;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:1px;
-  cursor:pointer;
-  transition:.2s;
-  box-shadow:none;
-}
-.hour-pill:hover{transform:scale(1.05);}
-.hour-pill.active{
-  background:linear-gradient(180deg,var(--blue),#2563eb);
-  border-color:var(--blue);
-  color:#fff;
-}
-.hour-pill.empty{opacity:.35; cursor:not-allowed; border-style:dashed;}
-.hour-pill.empty:hover{transform:none;}
-
-.pill-row-label{
-  padding:2px 14px 6px;
-  font-size:11px;
-  letter-spacing:2px;
-  color:var(--glow);
-  font-family:'Orbitron', sans-serif;
-  opacity:.9;
-}
-
-#channelPillRow{display:flex; flex-wrap:wrap; gap:8px; padding:0 14px 14px;}
-.channel-pill{
-  flex:0 0 auto;
-  width:auto;
-  margin:0;
-  padding:8px 14px;
-  border-radius:20px;
-  border:1px solid rgba(56,189,248,.4);
-  background:rgba(56,189,248,.06);
-  color:var(--glow);
-  font-family:'Orbitron', sans-serif;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:1px;
-  cursor:pointer;
-  transition:.2s;
-  box-shadow:none;
-}
-.channel-pill:hover{transform:scale(1.05);}
-.channel-pill.active{
-  background:linear-gradient(180deg,var(--glow),#0284c7);
-  border-color:var(--glow);
-  color:#04060c;
-}
-
-.filter-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  background:rgba(139,92,246,.08);
-  border-bottom:1px solid var(--border);
-  padding-right:14px;
-  flex-wrap:wrap;
-}
-#bossFilterPanel h3{
-  text-align:left;
-  margin:0;
-  padding:14px 16px;
-  color:#fff;
-  font-size:13px;
-  letter-spacing:2px;
-  font-family:'Orbitron', sans-serif;
-  background:none;
-  border-bottom:none;
-  flex:0 0 auto;
-}
-.boss-search-wrap{position:relative; flex:0 1 220px; min-width:160px;}
-.section-header-controls .boss-search-wrap{flex:0 1 240px; min-width:180px; margin-left:auto;}
-@media (max-width:640px){
-  .section-header-controls .boss-search-wrap{margin-left:0; flex:1 1 100%;}
-}
-.boss-search-icon{
-  position:absolute;
-  top:50%; left:11px;
-  transform:translateY(-50%);
-  font-size:12px;
-  opacity:.65;
-  pointer-events:none;
-}
-.boss-search-input{
-  width:100%;
-  margin:0;
-  padding:7px 10px 7px 30px;
-  border-radius:20px;
-  border:1px solid rgba(56,189,248,.4);
-  background:rgba(255,255,255,.05);
-  color:#fff;
-  font-family:'Rajdhani', sans-serif;
-  font-size:12.5px;
-  font-weight:600;
-  letter-spacing:.3px;
-}
-.boss-search-input::placeholder{color:var(--text2);}
-.boss-search-input:focus{outline:none; border-color:var(--glow); box-shadow:0 0 0 2px rgba(56,189,248,.2);}
-.filter-actions{display:flex; gap:8px; margin:12px 14px 10px;}
-#bossFilterList{display:flex; flex-direction:column; gap:10px; padding:0 14px;}
-
-.hour-group{border:1px solid var(--border); border-radius:10px; overflow:hidden; background:rgba(255,255,255,.02);}
-.hour-group-toggle{
-  width:100%; margin:0; display:flex; align-items:center; gap:10px;
-  padding:10px 12px; background:rgba(59,130,246,.06); border:none;
-  color:#fff; font-family:'Orbitron', sans-serif; font-size:13px; font-weight:800;
-  letter-spacing:2px; cursor:pointer; transition:.2s; box-shadow:none;
-}
-.hour-group-toggle:hover{background:rgba(59,130,246,.12); transform:none;}
-.hour-group-label{flex:1; text-align:left;}
-.hour-group-arrow{color:var(--glow); transition:.2s;}
-.hour-group.open .hour-group-arrow{transform:rotate(180deg);}
-.hour-group-body{display:none; flex-direction:column; gap:8px; padding:10px;}
-.hour-group.open .hour-group-body{display:flex;}
-
-.boss-filter-item{border:1px solid var(--border); border-radius:10px; overflow:hidden; background:rgba(255,255,255,.02);}
-.boss-filter-toggle{
-  width:100%; margin:0; display:flex; align-items:center; gap:10px;
-  padding:10px 12px; background:transparent; border:none;
-  color:#fff; font-family:'Orbitron', sans-serif; font-size:12px; letter-spacing:1px;
-  cursor:pointer; transition:.2s; box-shadow:none;
-}
-.boss-filter-toggle:hover{background:rgba(255,255,255,.04); transform:none;}
-.bf-time{color:var(--warning); font-weight:800; font-size:11px; white-space:nowrap;}
-.bf-name{flex:1; text-align:left; color:#fff;}
-.bf-arrow{color:var(--text2); transition:.2s;}
-.boss-filter-item.open .bf-arrow{transform:rotate(180deg);}
-.boss-filter-body{display:none; flex-direction:column; gap:6px; padding:4px 12px 12px; border-top:1px solid var(--border);}
-.boss-filter-item.open .boss-filter-body{display:flex;}
-.bf-check{display:flex; align-items:center; gap:8px; font-family:'Rajdhani', sans-serif; font-size:14px; color:var(--text2); cursor:pointer;}
-.bf-check input[type="checkbox"]{width:auto; margin:0; accent-color:var(--blue); cursor:pointer;}
-
-/* channel wrapper / grid — flattened, no extra boxed panel */
-#channelsWrapper{
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-  cursor:grab;
-  user-select:none;
-  touch-action:pan-y;
-}
-#channelsWrapper .datetime-input,
-#channelsWrapper input{
-  user-select:text;
-  -webkit-user-select:text;
-  -webkit-touch-callout:default;
-}
-#channelsWrapper.dragging{cursor:grabbing; user-select:none;}
-#channelsWrapper.dragging *{user-select:none;}
-
-.channel-section{width:100%; display:flex; flex-direction:column;}
-.channel-header{display:none;}
-.channel-section.collapsed .channel-body{display:none;}
-
-.channel-body,.container{
-  display:flex;
-  flex-wrap:wrap;
-  gap:18px;
-  padding:2px 2px 30px;
-  max-height:none;
-  overflow:visible;
-}
-
-/* =========================
-   BOSS CARDS
-   ========================= */
-.card{
-  width:240px;
-  flex-shrink:0;
-  border-radius:16px;
-  border:2px solid var(--card-accent);
-  background:var(--card);
-  overflow:hidden;
-  position:relative;
-  transition:.25s;
-  box-shadow:0 0 0 1px rgba(47,143,255,.14) inset, 0 10px 24px rgba(0,0,0,.45), 0 0 16px var(--card-accent-glow);
-}
-.card:hover{transform:translateY(-5px); box-shadow:0 0 0 1px rgba(47,143,255,.2) inset, 0 18px 34px rgba(0,0,0,.55), 0 0 22px var(--card-accent-glow);}
-.card.next{box-shadow:0 0 0 2px var(--glow), 0 0 26px rgba(56,189,248,.55);}
-
-.card-art{
-  height:170px;
-  background-size:cover;
-  background-position:right top;
-  background-color:#0b0f1a;
-  position:relative;
-}
-.card-art::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(180deg, rgba(6,9,20,0) 38%, rgba(6,9,20,.94) 100%);
-}
-.card-map-icon{
-  position:absolute;
-  top:8px;
-  left:8px;
-  width:58px;
-  height:58px;
-  z-index:2;
-  object-fit:contain;
-  filter:drop-shadow(0 3px 8px rgba(0,0,0,.7));
-  pointer-events:none;
-}
-.card-location{
-  font-size:12px;
-  letter-spacing:.5px;
-  color:var(--glow);
-  font-family:'Rajdhani', sans-serif;
-  font-weight:700;
-  margin-top:-2px;
-}
-.card-art-info{
-  position:absolute;
-  left:10px;
-  right:10px;
-  bottom:8px;
-  z-index:1;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:5px;
-}
-.card-name{
-  color:#fff;
-  font-family:'Orbitron', sans-serif;
-  font-weight:800;
-  font-size:17px;
-  letter-spacing:.5px;
-  text-shadow:0 2px 6px rgba(0,0,0,.85);
-}
-.card-ch-badge{
-  font-family:'Orbitron', sans-serif;
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:1px;
-  padding:5px 12px 5px 10px;
-  border-radius:8px;
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:rgba(0,0,0,.55);
-  border:1px solid var(--ch-color, var(--card-accent));
-  color:var(--ch-color, var(--card-accent));
-  box-shadow:0 0 10px var(--ch-glow, transparent);
-}
-.card-ch-badge::before{content:"⏱"; font-size:10px;}
-
-/* Per-channel colors — same badge shape, different color per channel
-   so CH 0 / CH 1 / CH 2 / CH 3 are instantly distinguishable at a glance. */
-.card-ch-badge.ch-0{--ch-color:#38BDF8; --ch-glow:rgba(56,189,248,.45);}
-.card-ch-badge.ch-1{--ch-color:#22C55E; --ch-glow:rgba(34,197,94,.45);}
-.card-ch-badge.ch-2{--ch-color:#F59E0B; --ch-glow:rgba(245,158,11,.45);}
-.card-ch-badge.ch-3{--ch-color:#EC4899; --ch-glow:rgba(236,72,153,.45);}
-
-.card-body{padding:12px 14px 14px; text-align:center;}
-
-.timer{
-  font-family:'Orbitron', sans-serif;
-  font-weight:900;
-  font-size:23px;
-  color:var(--card-accent);
-  margin:2px 0 3px;
-}
-/* Turns red + pulses once a boss's OWN countdown drops under 5
-   minutes — same treatment as the hero panel's #nextBossTimer.danger,
-   but reusable on any individual boss card. */
-.timer.danger{color:var(--danger) !important; animation:dangerPulse 1.1s infinite;}
-.next-label{
-  font-family:'Rajdhani', sans-serif;
-  font-size:12px;
-  font-weight:600;
-  letter-spacing:.3px;
-  color:var(--text2);
-  margin-bottom:8px;
-}
-
-.calendar-panel{
-  margin-top:4px;
-  width:100%;
-  background:rgba(255,255,255,.03);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:8px;
-  transition:.2s;
-}
-.calendar-display{
-  font-size:10px;
-  letter-spacing:1.5px;
-  color:var(--text2);
-  margin-bottom:6px;
-  text-align:left;
-  font-family:'Orbitron', sans-serif;
-}
-.datetime-input{
-  width:100%;
-  height:32px;
-  background:#05070d;
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:4px 8px;
-  font-size:13px;
-  outline:none;
-  font-family:'Rajdhani', sans-serif;
-}
-.datetime-input::-webkit-calendar-picker-indicator{filter:invert(1); opacity:.8; cursor:pointer;}
-
-button{
-  width:100%;
-  margin-top:8px;
-  padding:10px;
-  font-weight:800;
-  cursor:pointer;
-  border:1px solid var(--border);
-  border-radius:10px;
-  transition:.2s;
-  font-family:'Orbitron', sans-serif;
-  letter-spacing:1px;
-  font-size:12px;
-  background:var(--panel);
-  color:var(--text2);
-  box-shadow:none;
-}
-button:hover{transform:translateY(-1px); filter:brightness(1.15);}
-button:active{transform:translateY(0); filter:brightness(.92);}
-
-.set-manual{background:rgba(255,255,255,.05); border:1px solid rgba(148,163,184,.45); color:var(--text);}
-.set-manual:hover{background:rgba(255,255,255,.09); border-color:var(--card-accent); color:var(--card-accent);}
-.killed-now{
-  background:linear-gradient(180deg, var(--card-accent) 0%, var(--card-accent-dim) 100%);
-  border-color:var(--card-accent);
-  color:#fff;
-  text-shadow:0 1px 3px rgba(0,0,0,.45);
-  box-shadow:0 4px 14px var(--card-accent-glow);
-}
-.killed-now:hover{filter:brightness(1.1); box-shadow:0 6px 18px var(--card-accent-glow);}
-
-.set-manual::before{content:"🕒 ";}
-.killed-now::before{content:"💀 ";}
-
-/* NOTE: boss cards all share one accent (--card-accent, set in :root)
-   so every boss card — Darkswordsman Jr., Etherial Fist, Ninja Knife,
-   Dark Swordsman, Dark Art Master — looks the same. The old per-category
-   color classes (cat-dsjr/cat-ef/cat-nk/cat-ds/cat-dam) are still added
-   by script.js but no longer override the color, by design. */
-
-/* =========================
-   RIGHT COLUMN / KILL HISTORY
-   ========================= */
-#rightCol{position:sticky; top:96px;}
-
-#historyPanel{
-  width:100%;
-  max-height:calc(100vh - 130px);
-  overflow-y:auto;
-  touch-action:pan-y;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:0 0 14px;
-}
-#historyPanel h3{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  text-align:left;
-  margin:0;
-  padding:16px 18px;
-  color:#fff;
-  letter-spacing:2px;
-  font-size:14px;
-  font-family:'Orbitron', sans-serif;
-  border-bottom:1px solid var(--border);
-}
-
-#historyList{display:flex; flex-direction:column; padding:4px 12px;}
-
-.history-item{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px 4px;
-  border-bottom:1px solid var(--border);
-}
-.history-item:last-child{border-bottom:none;}
-
-.history-avatar-wrap{position:relative; flex-shrink:0; width:44px; height:44px;}
-.history-avatar{
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  flex-shrink:0;
-  background-size:cover;
-  background-position:center top;
-  background-color:#0b0f1a;
-  border:2px solid var(--card-accent);
-  box-shadow:0 0 10px var(--card-accent-glow);
-}
-.history-avatar--fallback{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  background:linear-gradient(160deg, #1c2436, #0b0f1a);
-}
-.history-avatar--fallback::before{content:"💀";}
-.history-map-badge{
-  position:absolute;
-  right:-3px;
-  bottom:-3px;
-  width:20px;
-  height:20px;
-  border-radius:50%;
-  background:#0b0f1a;
-  border:2px solid var(--panel);
-  object-fit:contain;
-  padding:2px;
-  box-sizing:border-box;
-}
-.history-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
-.history-name{
-  color:#fff;
-  font-family:'Orbitron', sans-serif;
-  font-size:13px;
-  font-weight:700;
-  white-space:normal;
-  overflow-wrap:break-word;
-  line-height:1.25;
-}
-.history-location{
-  display:flex;
-  align-items:center;
-  gap:4px;
-  color:var(--glow);
-  font-size:11px;
-  font-weight:600;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.history-location--unknown{color:var(--text2); font-style:italic;}
-.history-ch{color:var(--text2); font-size:11px; margin-top:1px;}
-.history-date{
-  color:var(--text2);
-  font-size:13px;
-  font-weight:700;
-  text-align:right;
-  white-space:nowrap;
-  flex-shrink:0;
-  line-height:1.4;
-}
-
-.history-actions{display:flex; gap:8px; margin-top:10px; padding:0 12px;}
-
-.small-btn{
-  flex:1;
-  padding:10px 8px;
-  border-radius:10px;
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:1px;
-  cursor:pointer;
-  border:1px solid var(--border);
-  font-family:'Orbitron', sans-serif;
-  transition:.2s;
-  box-shadow:none;
-  margin-top:0;
-}
-.small-btn:hover{transform:translateY(-1px); filter:brightness(1.2);}
-
-.btn-clear{background:rgba(56,189,248,.14); border-color:var(--glow); color:var(--glow);}
-.btn-clear:hover{background:rgba(239,68,68,.16); border-color:var(--danger); color:var(--danger);}
-.btn-refresh{background:rgba(59,130,246,.14); border-color:var(--blue); color:var(--blue);}
-.btn-refresh::before{content:"🔄 ";}
-.btn-clear::before{content:"🗑️ ";}
-
-#pinInput{
-  width:calc(100% - 24px);
-  height:38px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:#05070d;
-  color:var(--text);
-  padding:0 10px;
-  margin:10px 12px 0;
-  font-family:'Orbitron', sans-serif;
-  letter-spacing:1px;
-  user-select:text;
-  -webkit-user-select:text;
-  -webkit-touch-callout:default;
-}
-#pinError{font-size:12px; margin-top:6px; padding:0 12px; font-family:'Orbitron', sans-serif; letter-spacing:1px;}
-
-/* =========================
-   FOOTER
-   ========================= */
-#appFooter{
-  text-align:center;
-  padding:26px 20px 34px;
-  border-top:1px solid var(--border);
-  margin-top:14px;
-}
-.footer-brand{
-  font-family:'Orbitron', sans-serif;
-  font-weight:900;
-  font-size:14px;
-  letter-spacing:5px;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-}
-.footer-logo{width:24px; height:24px; object-fit:contain; flex-shrink:0;}
-.footer-tag{
-  font-family:'Orbitron', sans-serif;
-  font-size:10px;
-  letter-spacing:2px;
-  color:var(--text2);
-  margin-top:6px;
-}
-
-/* =========================
-   RESPONSIVE
-   ========================= */
-@media (max-width:1180px){
-  #appBody{grid-template-columns:190px minmax(0,1fr); }
-  #rightCol{grid-column:1 / -1; position:static;}
-  #historyPanel{max-height:420px;}
-}
-@media (max-width:760px){
-  #appBody{grid-template-columns:1fr; padding:16px;}
-  #sideNav{
-    position:static;
-    flex-direction:row;
-    overflow-x:auto;
-    gap:8px;
+  if(location){
+    const locHit = LOCATION_BG_MAP.find(([key]) => location.includes(key));
+    if(locHit) return locHit[1];
   }
-  .nav-item{flex:0 0 auto; padding:10px 12px;}
-  .trash-bin{flex:0 0 auto; margin-top:0; padding:10px 14px; flex-direction:row; gap:8px;}
-  .trash-label{line-height:1.2;}
-  .brand-nav{display:none;}
-  .hero-row{flex-direction:column; align-items:stretch;}
-  .hero-left,.hero-timer-block,.hero-art{flex:1 1 auto; width:100%;}
-  .hero-art{height:120px;}
-  .hero-live-badge{position:static; margin-bottom:10px; align-self:flex-start;}
+  const hit = BOSS_BG_MAP.find(([key]) => name.includes(key));
+  return hit ? hit[1] : null;
+}
+
+/* Map of school/map-name substring -> map icon file. Used to badge each
+   boss card (and the hero "next spawn" art) with the icon of the school
+   that boss's location belongs to: Mystic Peak, Sacred Gate, or Phoenix.
+   Keyed independently of species name/background, since different boss
+   species (Darkswordsman Jr., Etherial Fist) can share the same school. */
+const MAP_ICON_MAP = [
+  ["Mystic Peak", "Mystic_Peak.png"],
+  ["MP Campus", "Mystic_Peak.png"],
+  ["Sacred Gate Hole", "Sacred_Gate.png"],
+  ["SG Campus", "Sacred_Gate.png"],
+  ["Phoenix", "Phoenix.png"],
+  
+];
+
+/* Full scenic background for the "NEXT SPAWN" hero panel, swapped in
+   based on which school/location the next boss belongs to. Add more
+   entries here as more location backgrounds are provided (Phoenix,
+   Sacred Gate, etc). */
+const PANEL_BG_MAP = [
+  ["Mystic Peak Hole", "Mystic.png"],
+  ["MP Campus", "mystic_bg.png"],
+  ["Phoenix Hole", "phoenix_hole_BG.png"],
+  ["Phoenix Campus", "Phc_bg.png"],
+  ["Sacred Gate Hole", "SacredGate_BG.png"],
+  ["SG Campus", "SG_Campus_BG.png"],
+  ["Practicing Yard", "Practicing_Yard_BG.png"],
+];
+
+function getPanelBg(location){
+  if(!location) return null;
+  const hit = PANEL_BG_MAP.find(([key]) => location.includes(key));
+  return hit ? hit[1] : null;
+}
+
+function setHeroPanelBg(location){
+  const panel = document.getElementById("nextBossPanel");
+  if(!panel) return;
+  const bg = getPanelBg(location);
+  if(bg){
+    panel.style.backgroundImage =
+      "linear-gradient(135deg, rgba(6,9,20,.88) 0%, rgba(6,9,20,.7) 55%, rgba(6,9,20,.92) 100%), url('" + bg + "')";
+    panel.style.backgroundSize = "cover";
+    panel.style.backgroundPosition = "center";
+  } else {
+    panel.style.backgroundImage = "";
+  }
+}
+
+function getMapIcon(location){
+  if(!location) return null;
+  const hit = MAP_ICON_MAP.find(([key]) => location.includes(key));
+  return hit ? hit[1] : null;
+}
+
+/* Clean, compact "Sep 8 · 12:02 PM" style formatting for next-spawn
+   timestamps, used instead of the verbose default toLocaleString()
+   output (e.g. "9/8/2025, 12:02:37 PM") so the boss cards and hero
+   panel read smoother at a glance. */
+function formatSpawnTime(date){
+  const datePart = date.toLocaleDateString([], {month:"short", day:"numeric"});
+  const timePart = date.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+  return `${datePart} · ${timePart}`;
+}
+
+/* Map of boss-name substring -> card accent color class (matches the
+   colored borders/badges in the KLASS X redesign). */
+const BOSS_CAT_CLASS_MAP = [
+  ["Darkswordsman Jr.", "cat-dsjr"],
+  ["Etherial Fist", "cat-ef"],
+  ["Ninja Knife", "cat-nk"],
+  ["DARK SWORDSMAN", "cat-ds"],
+  ["DARK ART MASTER", "cat-dam"],
+];
+
+function getBossCatClass(name){
+  const hit = BOSS_CAT_CLASS_MAP.find(([key]) => name.includes(key));
+  return hit ? hit[1] : "";
+}
+
+const channelsWrapper = document.getElementById("channelsWrapper");
+const sound = document.getElementById("sound");
+const sortBtn = document.getElementById("sortBtn");
+const soundBtn = document.getElementById("soundBtn");
+const nextBossTimer = document.getElementById("nextBossTimer");
+
+let autoSort = true;
+let alarmOn = true;
+let alerted = {};
+let warnedTenMin = {};
+let warnedFiveMin = {};
+let lastBeepSecond = null;
+
+function speak(text){
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1;
+    u.pitch = 1;
+    u.volume = 1;
+    speechSynthesis.speak(u);
+  }catch(e){}
 }
 
 /* =========================
-   POP-UP GUIDE
+   ✅ BUILD BOSS PANEL + CARDS
    ========================= */
-#guideHelpBtn{
-  position:fixed;
-  bottom:24px;
-  right:24px;
-  width:52px;
-  height:52px;
-  margin:0;
-  border-radius:50%;
-  background:linear-gradient(180deg,var(--blue) 0%,#1e40af 100%);
-  color:#fff;
-  font-family:'Orbitron', sans-serif;
-  font-size:24px;
-  font-weight:900;
-  border:2px solid var(--glow);
-  box-shadow:0 3px 14px rgba(56,189,248,.4);
-  z-index:10001;
-  transition:.2s;
-}
-#guideHelpBtn:hover{transform:translateY(-1px) scale(1.05); filter:brightness(1.1);}
-
-.guide-overlay{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(2,4,10,.8);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
-  z-index:10000;
-  align-items:flex-start;
-  justify-content:center;
-  padding:40px 20px;
-  overflow-y:auto;
-}
-.guide-overlay.open{display:flex;}
-
-.guide-modal{
-  position:relative;
-  width:100%;
-  max-width:980px;
-  background:linear-gradient(160deg,var(--panel),#0a0f1e);
-  border:2px solid var(--blue);
-  border-radius:22px;
-  padding:34px 34px 26px;
-  font-family:'Rajdhani', sans-serif;
-  color:var(--text);
+function isChannelCollapsed(ch){
+  try{ return localStorage.getItem("channel-collapsed-" + ch) === "1"; }catch(e){ return false; }
 }
 
-.guide-close{
-  position:absolute;
-  top:14px;
-  right:14px;
-  width:38px;
-  height:38px;
-  margin:0;
-  padding:0;
-  border-radius:10px;
-  background:var(--panel);
-  color:#fff;
-  font-size:22px;
-  line-height:1;
-  border:1px solid var(--danger);
-  box-shadow:none;
-}
-.guide-close:hover{background:var(--danger);}
-
-.guide-header{text-align:center; margin-bottom:26px;}
-.guide-header h2{
-  font-family:'Orbitron', sans-serif;
-  font-size:34px;
-  font-weight:900;
-  letter-spacing:3px;
-  color:#fff;
-  margin:0 0 4px;
-}
-.guide-header h2 span{display:block; color:var(--blue);}
-.guide-header p{margin:8px 0 0; color:var(--text2); font-size:15px; letter-spacing:1px;}
-
-.guide-steps{display:flex; flex-wrap:wrap; gap:16px; margin-bottom:22px;}
-.guide-step{
-  flex:1 1 280px;
-  background:rgba(59,130,246,.05);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:18px 16px 16px;
-  position:relative;
-}
-.guide-step-num{
-  position:absolute;
-  top:-12px;
-  left:16px;
-  width:28px;
-  height:28px;
-  border-radius:8px;
-  background:var(--blue);
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family:'Orbitron', sans-serif;
-  font-weight:900;
-  font-size:14px;
-}
-.guide-step h3{font-family:'Orbitron', sans-serif; font-size:14px; letter-spacing:1px; color:#fff; margin:10px 0 8px; line-height:1.4;}
-.guide-step p{font-size:13.5px; line-height:1.4; color:var(--text2); margin:0;}
-
-.c-red{color:var(--danger);}
-.c-blue{color:var(--blue);}
-.c-cyan{color:var(--glow);}
-.c-teal{color:var(--purple);}
-.c-gold{color:var(--warning);}
-
-.guide-summary{border-top:1px solid var(--border); padding-top:18px; margin-bottom:20px;}
-.guide-summary h4{text-align:center; font-family:'Orbitron', sans-serif; letter-spacing:3px; font-size:15px; color:#fff; margin:0 0 16px;}
-.guide-summary-items{display:flex; flex-wrap:wrap; justify-content:center; gap:22px;}
-.summary-item{display:flex; flex-direction:column; align-items:center; width:130px; text-align:center; gap:6px;}
-.summary-icon{font-size:26px;}
-.summary-item span:last-child{font-size:12px; color:var(--text2); line-height:1.35;}
-
-.guide-footer{
-  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
-  border-top:1px solid var(--border); padding-top:18px;
-}
-.guide-dontshow{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text2); letter-spacing:.5px; cursor:pointer;}
-.guide-dontshow input{width:auto; margin:0; cursor:pointer;}
-.guide-gotit{
-  width:auto; min-width:160px; margin:0;
-  background:linear-gradient(180deg,var(--blue),#1e40af);
-  color:#fff;
-  font-family:'Orbitron', sans-serif;
-  letter-spacing:2px;
-  border:1px solid var(--glow);
+function toggleChannel(ch){
+  const section = document.getElementById("channel-" + ch + "-section");
+  section.classList.toggle("collapsed");
+  try{
+    localStorage.setItem("channel-collapsed-" + ch, section.classList.contains("collapsed") ? "1" : "0");
+  }catch(e){}
 }
 
-@media (max-width:820px){.guide-step{flex-basis:calc(50% - 8px);}}
-@media (max-width:560px){
-  .guide-step{flex-basis:100%;}
-  .guide-modal{padding:24px 18px 20px;}
+(function buildBossSection(){
+  const section = document.createElement("div");
+  section.className = "channel-section";
+  section.id = "channel-" + BOSS_SECTION_KEY + "-section";
+  // Collapse/expand no longer has a visible toggle in the redesigned layout,
+  // so the boss grid always renders expanded (ignore any stale saved state).
+
+  section.innerHTML = `
+    <div class="channel-header" onclick="toggleChannel('${BOSS_SECTION_KEY}')">
+      <div class="channel-toggle">▾</div>
+      <div class="channel-title">BOSSES</div>
+    </div>
+    <div class="channel-body" id="channel-${BOSS_SECTION_KEY}-body"></div>
+  `;
+  channelsWrapper.appendChild(section);
+})();
+
+bosses.forEach(b => {
+  const card = document.createElement("div");
+  const catClass = getBossCatClass(b.name);
+  card.className = "card" + (catClass ? " " + catClass : "");
+  card.id = b.id + "-card";
+
+  const bg = getBossBg(b);
+  const artStyle = bg ? ` style="background-image:url('${bg}')"` : "";
+  const mapIcon = getMapIcon(b.location);
+  const mapIconHtml = mapIcon ? `<img class="card-map-icon" src="${mapIcon}" alt="${b.location}">` : "";
+  const locationHtml = b.location ? `<div class="card-location">${b.location}</div>` : "";
+
+  card.innerHTML = `
+    <div class="card-art"${artStyle}>
+      <div class="card-drag-handle" title="Drag to trash to reset">🗑️</div>
+      ${mapIconHtml}
+      <div class="card-art-info">
+        <div class="card-name">${b.name}</div>
+        ${locationHtml}
+        <div class="card-ch-badge ch-${b.channel}">CH ${b.channel}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="timer" id="${b.id}-timer">--:--:--</div>
+      <div class="next-label" id="${b.id}-next">Next Spawn: --</div>
+
+      <div class="calendar-panel">
+        <div class="calendar-display">Select Date &amp; Time</div>
+        <input
+        type="datetime-local"
+        class="datetime-input"
+        id="${b.id}-input"
+        step="1">
+      </div>
+
+      <button class="killed-now" onclick="now('${b.id}',${b.respawn})">Killed Now</button>
+      <button class="set-manual" onclick="manual('${b.id}',${b.respawn})">Set Manual</button>
+    </div>
+  `;
+  document.getElementById("channel-" + BOSS_SECTION_KEY + "-body").appendChild(card);
+});
+
+/* =========================
+   ✅ BOSS FILTER PANEL
+   Lets the user pick which bosses/channels actually
+   show up in the tracker grid, organized HOUR -> BOSS -> CHANNEL.
+   Choices persist locally per browser.
+   ========================= */
+
+/* Boss "families" shown in the filter — each covers every specific
+   name that shares that background/category. Rename display names
+   here later once the exact per-boss naming is finalized. */
+/* This table is ONLY used to power the "BOSSES & RESPAWN TIME" filter
+   dropdown (grouping + hour-pill labels) — it does NOT control the
+   actual countdown. The real timer always comes from each boss's own
+   `respawn` field up in the `bosses` array above. Keep the `respawn`
+   value here matching whatever you set on that boss's entries above,
+   or the filter pill will show the wrong hour label. */
+const BOSS_CATEGORIES = [
+  { name: "Dark Swordsman Jr.", respawn: 60,  match: ["Darkswordsman Jr."] },
+  { name: "Etherial Fist",      respawn: 120, match: ["Etherial Fist"] },
+  { name: "Ninja Knife",        respawn: 120, match: ["Ninja Knife"] },
+  { name: "Darkswordsman",      respawn: 120, match: ["Dark Swordsman"] },
+  { name: "Dark Art Master",    respawn: 360, match: ["Dark Art Master"] },
+  { name: "Cruel Jupiter",    respawn: 480, match: ["Cruel Jupiter"] },
+];
+
+/* =========================
+   ✅ SMART BOSS SEARCH
+   Powers the "Search: ch0, ef, mpcamp…" box in the toolbar. Typing
+   shorthand tokens (channel, boss abbreviation, map abbreviation),
+   separated by spaces, filters the boss card grid directly — every
+   token has to match (AND), so "ch0 ef" only shows CH-0 Etherial
+   Fist cards. Plain text still works as a normal substring search.
+   ========================= */
+const BOSS_ABBR = [
+  { tokens:["dsjr"],          test:b => b.name === "Darkswordsman Jr." },
+  { tokens:["ef"],            test:b => b.name === "Etherial Fist" },
+  { tokens:["nk"],            test:b => b.name === "Ninja Knife" },
+  { tokens:["ds","dsbig"],    test:b => b.name === "Dark Swordsman" },
+  { tokens:["dam"],           test:b => b.name === "Dark Art Master" },
+  { tokens:["cj"],            test:b => b.name === "Cruel Jupiter" },
+];
+
+const LOCATION_ABBR = [
+  { tokens:["mpcamp","mpc"],       test:loc => loc.includes("MP Campus") },
+  { tokens:["sgcamp","sgc"],       test:loc => loc.includes("SG Campus") },
+  { tokens:["phcamp","phc"],       test:loc => loc.includes("Phoenix Campus") },
+  { tokens:["mph","mphole"],       test:loc => loc.includes("Mystic Peak Hole") },
+  { tokens:["sgh","sghole"],       test:loc => loc.includes("Sacred Gate Hole") },
+  { tokens:["phh","phhole"],       test:loc => loc.includes("Phoenix Hole") },
+  { tokens:["py"],                 test:loc => loc.includes("Practicing Yard") },
+  { tokens:["lcb3","leo"],         test:loc => loc.includes("Leonine Campus B3") },
+];
+
+/* Joins shorthand that people naturally type with a space ("ds jr",
+   "ch 0") into single tokens before splitting, so "ch0 ds jr" and
+   "ch 0 dsjr" both resolve the same way. */
+function normalizeSearchQuery(raw){
+  return raw
+    .toLowerCase()
+    .replace(/ch\s*([0-3])/g, "ch$1")
+    .replace(/ds\s*jr\.?/g, "dsjr");
 }
+
+function tokenMatchesBoss(token, b){
+  const chMatch = token.match(/^ch([0-3])$/);
+  if(chMatch) return b.channel === parseInt(chMatch[1], 10);
+
+  const bossHit = BOSS_ABBR.find(entry => entry.tokens.includes(token));
+  if(bossHit) return bossHit.test(b);
+
+  const locHit = LOCATION_ABBR.find(entry => entry.tokens.includes(token));
+  if(locHit) return locHit.test(b.location || "");
+
+  const haystack = (b.name + " " + (b.location || "") + " ch" + b.channel).toLowerCase();
+  return haystack.includes(token);
+}
+
+function bossMatchesQuery(b, rawQuery){
+  const q = normalizeSearchQuery(rawQuery.trim());
+  if(!q) return true;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  return tokens.every(t => tokenMatchesBoss(t, b));
+}
+
+const FILTER_STORAGE_KEY = "boss-visibility-v2";
+
+function loadBossVisibility(){
+  try{
+    const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+
+function saveBossVisibility(state){
+  try{ localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+let bossVisibility = loadBossVisibility();
+
+/* True once the user has made at least one explicit filter choice.
+   Before that, isGroupVisible() defaulting to "visible" would make
+   every hour-pill and channel-pill LOOK pre-selected/active even
+   though the user never touched anything — implying a filter is
+   already applied when it isn't. Pills stay neutral until the user
+   actually clicks one; the boss list itself still shows everything
+   by default regardless, this only affects the pill highlight. */
+function hasCustomFilters(){
+  return Object.keys(bossVisibility).length > 0;
+}
+
+function visKey(catName, ch){ return catName + "::" + ch; }
+
+function isGroupVisible(catName, ch){
+  return bossVisibility[visKey(catName, ch)] !== false; // default: visible
+}
+
+function categoryForBoss(b){
+  return BOSS_CATEGORIES.find(c => c.match.includes(b.name)) || null;
+}
+
+function applyBossVisibility(){
+  bosses.forEach(b => {
+    const cat = categoryForBoss(b);
+    const visible = cat ? isGroupVisible(cat.name, b.channel) : true;
+    const card = document.getElementById(b.id + "-card");
+    if(card){
+      const searchHidden = card.dataset.searchHidden === "1";
+      card.style.display = (visible && !searchHidden) ? "" : "none";
+    }
+  });
+}
+
+/* Live search — filters the boss CARD GRID itself as you type (see
+   the BOSS_ABBR/LOCATION_ABBR tables above for supported shorthand). */
+(function initBossCardSearch(){
+  const input = document.getElementById("bossSearchInput");
+  if(!input) return;
+  input.addEventListener("input", () => {
+    const q = input.value;
+    bosses.forEach(b => {
+      const card = document.getElementById(b.id + "-card");
+      if(!card) return;
+      card.dataset.searchHidden = bossMatchesQuery(b, q) ? "" : "1";
+    });
+    applyBossVisibility();
+  });
+})();
+
+/* Fixed set of respawn brackets the tracker supports (in hours).
+   Any BOSS_CATEGORIES entry using one of these (respawn in minutes,
+   e.g. 60 -> 1H, 360 -> 6H) will automatically land in the matching
+   pill/group below. Brackets with no bosses yet still show as a
+   dimmed "empty" pill so the full 1H-12H range is always visible. */
+const RESPAWN_HOURS = [1,2,3,4,5,6,7,8,10,12];
+
+function hourLabel(minutes){ return (minutes / 60) + "H"; }
+
+(function buildHourPillRow(){
+  const row = document.getElementById("hourPillRow");
+  if(!row) return;
+
+  RESPAWN_HOURS.forEach(hr => {
+    const minutes = hr * 60;
+    const cats = BOSS_CATEGORIES.filter(c => c.respawn === minutes);
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = "hour-pill" + (cats.length ? "" : " empty");
+    pill.textContent = hr + "H";
+
+    if(cats.length){
+      const active = hasCustomFilters() && cats.some(cat => [0,1,2,3].some(ch => isGroupVisible(cat.name, ch)));
+      pill.classList.toggle("active", active);
+
+      pill.onclick = () => {
+        const showing = !pill.classList.contains("active");
+
+        /* Only touch channels that are currently part of the user's
+           channel selection, instead of forcing ALL 4 channels on/off.
+           Previously this pill blindly overrode every channel for this
+           respawn bracket, which silently undid any channel a user had
+           manually hidden — confusing since nothing they clicked here
+           was the "CHANNEL FILTER" row. Now it respects that choice. */
+        const activeChannels = [0,1,2,3].filter(ch =>
+          BOSS_CATEGORIES.some(c => isGroupVisible(c.name, ch))
+        );
+        const channelsToToggle = activeChannels.length ? activeChannels : [0,1,2,3];
+
+        cats.forEach(cat => {
+          channelsToToggle.forEach(ch => { bossVisibility[visKey(cat.name, ch)] = showing; });
+        });
+        saveBossVisibility(bossVisibility);
+        pill.classList.toggle("active", showing);
+        syncFilterCheckboxes();
+        syncChannelPills();
+        applyBossVisibility();
+      };
+    } else {
+      pill.disabled = true;
+      pill.title = "No bosses assigned to this respawn time yet";
+    }
+
+    row.appendChild(pill);
+  });
+})();
+
+function syncFilterCheckboxes(){
+  document.querySelectorAll('#bossFilterList input[type="checkbox"]').forEach(cb => {
+    cb.checked = isGroupVisible(cb.getAttribute("data-cat"), cb.getAttribute("data-ch"));
+  });
+}
+
+(function buildChannelPillRow(){
+  const row = document.getElementById("channelPillRow");
+  if(!row) return;
+
+  [0,1,2,3].forEach(ch => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = "channel-pill";
+    pill.textContent = "CH " + ch;
+
+    const active = hasCustomFilters() && BOSS_CATEGORIES.some(cat => isGroupVisible(cat.name, ch));
+    pill.classList.toggle("active", active);
+
+    pill.onclick = () => {
+      const showing = !pill.classList.contains("active");
+      BOSS_CATEGORIES.forEach(cat => {
+        bossVisibility[visKey(cat.name, ch)] = showing;
+      });
+      saveBossVisibility(bossVisibility);
+      pill.classList.toggle("active", showing);
+      syncFilterCheckboxes();
+      syncHourPills();
+      applyBossVisibility();
+    };
+
+    row.appendChild(pill);
+  });
+})();
+
+function syncChannelPills(){
+  document.querySelectorAll("#channelPillRow .channel-pill").forEach(pill => {
+    const ch = parseInt(pill.textContent.replace("CH ", ""), 10);
+    const active = hasCustomFilters() && BOSS_CATEGORIES.some(cat => isGroupVisible(cat.name, ch));
+    pill.classList.toggle("active", active);
+  });
+}
+
+(function buildBossFilterPanel(){
+  const list = document.getElementById("bossFilterList");
+  if(!list) return;
+
+  const hours = [...new Set(BOSS_CATEGORIES.map(c => c.respawn))].sort((a,b) => a - b);
+
+  hours.forEach(hr => {
+    const hourGroup = document.createElement("div");
+    hourGroup.className = "hour-group";
+    hourGroup.innerHTML = `
+      <button class="hour-group-toggle" type="button">
+        <span class="hour-group-label">${hourLabel(hr)}</span>
+        <span class="hour-group-arrow">▾</span>
+      </button>
+      <div class="hour-group-body"></div>
+    `;
+    list.appendChild(hourGroup);
+
+    hourGroup.querySelector(".hour-group-toggle").onclick = () => {
+      hourGroup.classList.toggle("open");
+    };
+
+    const hourBody = hourGroup.querySelector(".hour-group-body");
+
+    BOSS_CATEGORIES.filter(c => c.respawn === hr).forEach(cat => {
+      const item = document.createElement("div");
+      item.className = "boss-filter-item";
+      item.innerHTML = `
+        <button class="boss-filter-toggle" type="button">
+          <span class="bf-name">${cat.name}</span>
+          <span class="bf-arrow">▾</span>
+        </button>
+        <div class="boss-filter-body">
+          ${[0,1,2,3].map(ch => `
+            <label class="bf-check">
+              <input type="checkbox" data-cat="${cat.name}" data-ch="${ch}" ${isGroupVisible(cat.name, ch) ? "checked" : ""}>
+              CH ${ch}
+            </label>
+          `).join("")}
+        </div>
+      `;
+      hourBody.appendChild(item);
+
+      item.querySelector(".boss-filter-toggle").onclick = () => {
+        item.classList.toggle("open");
+      };
+
+      item.querySelectorAll("input[type=checkbox]").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const key = visKey(cb.getAttribute("data-cat"), cb.getAttribute("data-ch"));
+          bossVisibility[key] = cb.checked;
+          saveBossVisibility(bossVisibility);
+          syncHourPills();
+          syncChannelPills();
+          applyBossVisibility();
+        });
+      });
+    });
+  });
+
+  const showAllBtn = document.getElementById("filterShowAllBtn");
+  const hideAllBtn = document.getElementById("filterHideAllBtn");
+
+  function setAll(visible){
+    BOSS_CATEGORIES.forEach(cat => {
+      [0,1,2,3].forEach(ch => { bossVisibility[visKey(cat.name, ch)] = visible; });
+    });
+    saveBossVisibility(bossVisibility);
+    list.querySelectorAll("input[type=checkbox]").forEach(cb => { cb.checked = visible; });
+    syncHourPills();
+    syncChannelPills();
+    applyBossVisibility();
+  }
+
+  if(showAllBtn) showAllBtn.onclick = () => setAll(true);
+  if(hideAllBtn) hideAllBtn.onclick = () => setAll(false);
+
+  applyBossVisibility();
+})();
+
+function syncHourPills(){
+  document.querySelectorAll("#hourPillRow .hour-pill:not(.empty)").forEach(pill => {
+    const hr = parseInt(pill.textContent, 10);
+    const minutes = hr * 60;
+    const cats = BOSS_CATEGORIES.filter(c => c.respawn === minutes);
+    const active = hasCustomFilters() && cats.some(cat => [0,1,2,3].some(ch => isGroupVisible(cat.name, ch)));
+    pill.classList.toggle("active", active);
+  });
+}
+
+/* =========================
+   ✅ RESPAWN FILTER DOCK (top-right dropdown)
+   ========================= */
+(function wireFilterDock(){
+  const dock = document.getElementById("respawnFilterDock");
+  const toggleBtn = document.getElementById("bossFilterToggleBtn");
+  if(!dock || !toggleBtn) return;
+
+  toggleBtn.onclick = (e) => {
+    e.stopPropagation();
+    dock.classList.toggle("open");
+  };
+
+  document.addEventListener("click", (e) => {
+    if(dock.classList.contains("open") && !dock.contains(e.target)){
+      dock.classList.remove("open");
+    }
+  });
+})();
+
+/* =========================
+   ✅ TOP BUTTONS
+   ========================= */
+sortBtn.onclick = () => {
+  autoSort = !autoSort;
+  sortBtn.textContent = "AUTO SORT: " + (autoSort ? "ON" : "OFF");
+  sortBtn.classList.toggle("off", !autoSort);
+};
+
+soundBtn.onclick = () => {
+  alarmOn = !alarmOn;
+  soundBtn.textContent = "ALARM: " + (alarmOn ? "ON" : "SILENT");
+  soundBtn.classList.toggle("off", !alarmOn);
+};
+
+/* =========================
+   ✅ HISTORY
+   ========================= */
+/* Pull "Boss Name" and "Location" back out of a history entry's raw
+   fullName string (e.g. "CH-0 Darkswordsman Jr. - Mystic Peak Hole.").
+   Falls back gracefully for older/odd-format entries that don't match
+   the "Name - Location" pattern, so history never shows a blank icon
+   or a garbled string with no explanation. */
+/* Close-up "icon" art for the Kill History avatars specifically.
+   The boss-card art (BOSS_LOCATION_ART_MAP / BOSS_BG_MAP) is a full
+   scene shot, which crops awkwardly into a small 44px circle — these
+   are tighter portrait crops chosen to read clearly at avatar size. */
+const BOSS_HISTORY_ICON_MAP = [
+  ["Etherial Fist", "Etherial_Fist_Icon.png"],
+  ["Darkswordsman Jr.", "Darkswordsman_Icon.png"],
+  ["Ninja Knife", "Ninja_Knife_Icon.png"],
+];
+
+function getHistoryIcon(name){
+  const hit = BOSS_HISTORY_ICON_MAP.find(([key]) => name.includes(key));
+  return hit ? hit[1] : null;
+}
+
+function parseHistoryEntry(raw){
+  const chMatch = raw.match(/CH-(\d+)/);
+  const ch = chMatch ? chMatch[1] : "?";
+
+  let rest = raw.replace(/^CH-\d+\s*/, "").trim();
+  rest = rest.replace(/\.+$/, "");
+
+  const sepIdx = rest.indexOf(" - ");
+  let bossName, location;
+  if(sepIdx !== -1){
+    bossName = rest.slice(0, sepIdx).trim();
+    location = rest.slice(sepIdx + 3).trim();
+  } else {
+    bossName = rest;
+    location = "";
+  }
+
+  const bg = getHistoryIcon(bossName) || getBossBg({name: bossName, location});
+  const mapIcon = location ? getMapIcon(location) : null;
+
+  return {ch, bossName, location, bg, mapIcon};
+}
+
+function renderHistory(items){
+  const historyList = document.getElementById("historyList");
+  historyList.innerHTML = "";
+
+  if(!items || items.length === 0){
+    const empty = document.createElement("div");
+    empty.className = "history-item";
+    empty.textContent = "No logs yet. Click Killed Now.";
+    historyList.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+
+    const {ch, bossName, location, bg, mapIcon} = parseHistoryEntry(item.name);
+    const avatarStyle = bg ? ` style="background-image:url('${bg}')"` : "";
+    const avatarClass = bg ? "history-avatar" : "history-avatar history-avatar--fallback";
+    const mapBadge = mapIcon ? `<img class="history-map-badge" src="${mapIcon}" alt="" onerror="this.style.display='none'">` : "";
+    const locationRow = location
+      ? `<div class="history-location" title="${location}"><span class="rf-icon">📍</span>${location}</div>`
+      : `<div class="history-location history-location--unknown"><span class="rf-icon">❓</span>Unknown location</div>`;
+    const killedDate = new Date(item.killedAt);
+
+    div.innerHTML = `
+      <div class="history-avatar-wrap">
+        <div class="${avatarClass}"${avatarStyle}></div>
+        ${mapBadge}
+      </div>
+      <div class="history-info">
+        <div class="history-name" title="${bossName}">${bossName}</div>
+        ${locationRow}
+        <div class="history-ch">CH ${ch}</div>
+      </div>
+      <div class="history-date">
+        ${killedDate.toLocaleDateString([], {month:"short", day:"numeric"})}<br>
+        ${killedDate.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"})}
+      </div>
+    `;
+    historyList.appendChild(div);
+  });
+}
+
+function refreshHistory(){
+  db.ref("history").limitToLast(HISTORY_LIMIT).once("value").then(snapshot => {
+    const data = snapshot.val();
+    if(!data) return renderHistory([]);
+    const items = Object.values(data).sort((a,b) => b.killedAt - a.killedAt);
+    renderHistory(items);
+  });
+}
+
+function clearHistory(){
+  const pinInput = document.getElementById("pinInput");
+  const pinError = document.getElementById("pinError");
+  const pin = (pinInput.value || "").trim();
+
+  if(pin !== ADMIN_PIN){
+    pinError.style.color = "#a13d2b";
+    pinError.textContent = "❌ Wrong PIN";
+    return;
+  }
+
+  if(!confirm("Clear ALL kill history?")) return;
+
+  db.ref("history").remove().then(() => {
+    pinError.style.color = "#8fae6a";
+    pinError.textContent = "✅ History Cleared!";
+    pinInput.value = "";
+  }).catch(() => {
+    pinError.style.color = "#a13d2b";
+    pinError.textContent = "❌ Error clearing history";
+  });
+}
+
+db.ref("history").limitToLast(HISTORY_LIMIT).on("value", snapshot => {
+  const data = snapshot.val();
+  if(!data) return renderHistory([]);
+  const items = Object.values(data).sort((a,b) => b.killedAt - a.killedAt);
+  renderHistory(items);
+});
+
+/* =========================
+   ✅ TIMER STORAGE (FIREBASE)
+   ========================= */
+/* Cache the last known timer data locally so that on a page refresh,
+   the tracker immediately shows the last real state instead of
+   flashing the empty "---" / "--:--:--" placeholder while waiting for
+   Firebase to respond over the network. Firebase remains the source
+   of truth — this cache is only used as an instant first paint, and
+   gets overwritten the moment Firebase's real "value" event arrives. */
+const BOSSES_CACHE_KEY = "cached-bosses-v1";
+
+function loadCachedBosses(){
+  try{
+    const raw = localStorage.getItem(BOSSES_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+
+function saveCachedBosses(data){
+  try{ localStorage.setItem(BOSSES_CACHE_KEY, JSON.stringify(data)); }catch(e){}
+}
+
+let firebaseBosses = loadCachedBosses();
+
+db.ref("bosses").on("value", snapshot => {
+  firebaseBosses = snapshot.val() || {};
+  saveCachedBosses(firebaseBosses);
+});
+
+/* =========================
+   ✅ SET NEXT (MANUAL)
+   ========================= */
+function setNext(id,mins,k){
+  const nextTime = k.getTime() + mins * 60000;
+  db.ref("bosses/" + id).set(nextTime);
+  alerted[id] = false;
+  warnedTenMin[id] = false;
+}
+
+/* =========================
+   ✅ BUTTON ACTIONS
+   ========================= */
+function now(id,mins){
+  // prevent clicking before server time is ready
+  if(!serverReady){
+    const pinError = document.getElementById("pinError");
+    if(pinError){
+      pinError.style.color = "#d9b878";
+      pinError.textContent = "⏳ Wait 1 second (syncing server time)...";
+      setTimeout(() => { pinError.textContent = ""; }, 1500);
+    }
+    return;
+  }
+
+  const serverNow = Date.now() + serverOffset;
+  const nextTime = serverNow + mins * 60000;
+
+  db.ref("bosses/" + id).set(nextTime);
+  alerted[id] = false;
+  warnedTenMin[id] = false;
+
+  const boss = bosses.find(b => b.id === id);
+  db.ref("history").push({
+    bossId: id,
+    name: boss ? boss.fullName : ("BOSS " + id),
+    killedAt: serverNow
+  });
+}
+
+function manual(id,mins){
+  const v = document.getElementById(id + "-input").value;
+  if(!v) return alert("Enter time");
+  setNext(id, mins, new Date(v));
+}
+
+function resetAll(){
+  if(!confirm("Reset ALL timers?")) return;
+  alerted = {};
+  warnedTenMin = {};
+  lastBeepSecond = null;
+  db.ref("bosses").remove();
+}
+
+/* Resets a single boss back to its original "no time set" state —
+   used when a card is dragged onto the trash bin. */
+function resetBoss(id){
+  db.ref("bosses/" + id).remove();
+  alerted[id] = false;
+  warnedTenMin[id] = false;
+  warnedFiveMin[id] = false;
+  const input = document.getElementById(id + "-input");
+  if(input) input.value = "";
+}
+
+/* =========================
+   ✅ MAIN UPDATE LOOP
+   ========================= */
+function update(){
+  if(inputLock) return;
+  let soonest = null, soonId = null;
+  const sortData = [];
+
+  bosses.forEach(b => {
+    const t = firebaseBosses[b.id];
+    const timer = document.getElementById(b.id + "-timer");
+    const next = document.getElementById(b.id + "-next");
+    const card = document.getElementById(b.id + "-card");
+    card.classList.remove("next");
+
+    if (Object.keys(firebaseBosses).length === 0) {
+      document.getElementById("nextBossName").textContent = "---";
+      const nextBossLocationEmpty = document.getElementById("nextBossLocation");
+      if(nextBossLocationEmpty) nextBossLocationEmpty.textContent = "";
+      document.getElementById("nextBossTimer").textContent = "--:--:--";
+      document.getElementById("nextBossTime").textContent = "---";
+      document.getElementById("nextBossTimer").classList.remove("danger");
+      const chBadge = document.getElementById("nextBossChBadge");
+      if(chBadge){
+        chBadge.innerHTML = '<span class="rf-icon">⏱</span> CH --';
+        chBadge.className = "hero-ch-badge";
+      }
+      const bar = document.getElementById("heroProgressBar");
+      if(bar) bar.style.width = "0%";
+      const heroArt = document.getElementById("heroArt");
+      if(heroArt) heroArt.style.backgroundImage = "none";
+      const heroMapIconEmpty = document.getElementById("heroMapIcon");
+      if(heroMapIconEmpty) heroMapIconEmpty.style.display = "none";
+      setHeroPanelBg(null);
+    }
+
+    if (!t) {
+      timer.textContent = "--:--:--";
+      timer.classList.remove("danger");
+      next.textContent = "Next Spawn: --";
+      sortData.push({ id: b.id, time: Infinity });
+      return;
+    }
+
+    // ✅ server-time countdown
+    const nowServer = Date.now() + serverOffset;
+    const d = t - nowServer;
+
+    if(d <= 0){
+      timer.textContent = "SPAWNED!";
+      timer.classList.add("danger");
+      next.textContent = "NOW";
+      warnedTenMin[b.id] = false;
+      warnedFiveMin[b.id] = false;
+      if(!alerted[b.id]){
+        if(alarmOn){
+          sound.currentTime = 0;
+          sound.play().catch(() => {});
+          speak(b.name + " has spawned at " + b.location + ", channel " + b.channel);
+        }
+        alerted[b.id] = true;
+      }
+      sortData.push({id:b.id, time:0});
+      return;
+    }
+
+    if(d <= 10*60*1000 && d > 9*60*1000 && !warnedTenMin[b.id]){
+      if(alarmOn){
+        sound.currentTime = 0;
+        sound.play().catch(() => {});
+        setTimeout(() => {
+          speak(b.name + " will spawn in 10 minutes at " + b.location + ", channel " + b.channel);
+        }, 250);
+      }
+      warnedTenMin[b.id] = true;
+    }
+
+    if(d > 10*60*1000){
+      warnedTenMin[b.id] = false;
+    }
+
+    if(d <= 5*60*1000 && d > 4*60*1000 && !warnedFiveMin[b.id]){
+      if(alarmOn){
+        sound.currentTime = 0;
+        sound.play().catch(() => {});
+        setTimeout(() => {
+          speak(b.name + " will spawn in 5 minutes at " + b.location + ", channel " + b.channel);
+        }, 250);
+      }
+      warnedFiveMin[b.id] = true;
+    }
+
+    if(d > 5*60*1000){
+      warnedFiveMin[b.id] = false;
+    }
+
+    sortData.push({id:b.id, time:d});
+    if(soonest === null || d < soonest){ soonest = d; soonId = b.id; }
+
+    const hh = String(Math.floor(d/3600000)).padStart(2,"0");
+    const mm = String(Math.floor(d%3600000/60000)).padStart(2,"0");
+    const ss = String(Math.floor(d%60000/1000)).padStart(2,"0");
+    timer.textContent = `${hh}:${mm}:${ss}`;
+    next.textContent = "Next: " + formatSpawnTime(new Date(t));
+
+    // This boss's own card turns red once IT is under 5 minutes away —
+    // independent of whichever boss is soonest overall in the hero panel.
+    if(d <= 5*60*1000){
+      timer.classList.add("danger");
+    }else{
+      timer.classList.remove("danger");
+    }
+  });
+
+  if(autoSort){
+    sortData.sort((a,b) => a.time - b.time);
+    const body = document.getElementById("channel-" + BOSS_SECTION_KEY + "-body");
+    if(body) sortData.forEach(o => body.appendChild(document.getElementById(o.id + "-card")));
+  }
+
+  if(soonId){
+    document.getElementById(soonId + "-card").classList.add("next");
+    const b = bosses.find(x => x.id === soonId);
+    document.getElementById("nextBossName").textContent = b.name;
+    const nextBossLocationEl = document.getElementById("nextBossLocation");
+    if(nextBossLocationEl) nextBossLocationEl.textContent = b.location || "";
+    setHeroPanelBg(b.location);
+    document.getElementById("nextBossTimer").textContent = document.getElementById(soonId + "-timer").textContent;
+
+    const chBadge = document.getElementById("nextBossChBadge");
+    if(chBadge){
+      chBadge.innerHTML = '<span class="rf-icon">⏱</span> CH ' + b.channel;
+      chBadge.className = "hero-ch-badge ch-" + b.channel;
+    }
+
+    const heroArt = document.getElementById("heroArt");
+    if(heroArt){
+      const heroBg = getBossBg(b);
+      heroArt.style.backgroundImage = heroBg ? `url('${heroBg}')` : "none";
+    }
+
+    const heroMapIcon = document.getElementById("heroMapIcon");
+    if(heroMapIcon){
+      const icon = getMapIcon(b.location);
+      if(icon){
+        heroMapIcon.src = icon;
+        heroMapIcon.style.display = "block";
+      }else{
+        heroMapIcon.removeAttribute("src");
+        heroMapIcon.style.display = "none";
+      }
+    }
+
+    const bar = document.getElementById("heroProgressBar");
+    if(bar){
+      const totalMs = b.respawn * 60000;
+      const pct = totalMs > 0 ? Math.max(0, Math.min(100, (1 - (soonest / totalMs)) * 100)) : 0;
+      bar.style.width = pct + "%";
+    }
+
+    const soonTs = firebaseBosses[soonId];
+    document.getElementById("nextBossTime").textContent = soonTs
+      ? ("Spawns at: " + formatSpawnTime(new Date(soonTs)))
+      : "---";
+
+    if(soonest <= 10000 && soonest > 0){
+      const sec = Math.ceil(soonest/1000);
+      if(lastBeepSecond !== sec){
+        if(alarmOn){
+          sound.currentTime = 0;
+          sound.play().catch(() => {});
+        }
+        lastBeepSecond = sec;
+      }
+    }else{ lastBeepSecond = null; }
+
+    if(soonest <= 5*60*1000){
+      nextBossTimer.classList.add("danger");
+    }else{
+      nextBossTimer.classList.remove("danger");
+    }
+  }
+}
+
+setInterval(update, 1000);
+
+/* =========================
+   ✅ DRAG-TO-SCROLL (channels wrapper)
+   Lets users click+drag left/right to pan between
+   channel panels instead of needing a scrollbar —
+   handy when the browser window is narrow.
+   ========================= */
+(function initDragScroll(){
+  const wrapper = channelsWrapper;
+  if(!wrapper) return;
+
+  const DRAG_THRESHOLD = 6; // px of movement before it counts as a drag, not a click
+  let isPointerDown = false;
+  let isDragging = false;
+  let startX = 0;
+  let startScrollLeft = 0;
+
+  function isFormControl(el){
+    return el.closest("input, textarea, select, button, .datetime-input, .card-drag-handle");
+  }
+
+  wrapper.addEventListener("mousedown", (e) => {
+    // Only left-click drags
+    if(e.button !== 0) return;
+
+    // If the click started on a button/input/etc, don't track it as a
+    // potential drag at all — otherwise normal mouse jitter while clicking
+    // (very common with a real mouse) can cross the drag threshold and
+    // cause the click to be swallowed by endDrag()'s suppressClick logic,
+    // making buttons like "Killed Now" seem to randomly not respond.
+    if(isFormControl(e.target)) return;
+
+    isPointerDown = true;
+    isDragging = false;
+    startX = e.pageX;
+    startScrollLeft = wrapper.scrollLeft;
+
+    // Stop the browser's native text-selection drag from starting at all.
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if(!isPointerDown) return;
+    const dx = e.pageX - startX;
+
+    if(!isDragging && Math.abs(dx) > DRAG_THRESHOLD){
+      isDragging = true;
+      wrapper.classList.add("dragging");
+    }
+
+    if(isDragging){
+      e.preventDefault();
+      wrapper.scrollLeft = startScrollLeft - dx;
+    }
+  });
+
+  function endDrag(){
+    if(isDragging){
+      wrapper.classList.remove("dragging");
+      // Swallow the click that follows a drag so buttons/toggles
+      // underneath the cursor don't accidentally fire.
+      const suppressClick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        window.removeEventListener("click", suppressClick, true);
+      };
+      window.addEventListener("click", suppressClick, true);
+      setTimeout(() => window.removeEventListener("click", suppressClick, true), 0);
+    }
+    isPointerDown = false;
+    isDragging = false;
+  }
+
+  window.addEventListener("mouseup", endDrag);
+  wrapper.addEventListener("mouseleave", (e) => {
+    // Only end the drag if the mouse actually left the window area over the wrapper edge,
+    // not just moved over a child element (mouseleave on wrapper fires for children too
+    // only if relatedTarget is outside wrapper).
+    if(!wrapper.contains(e.relatedTarget)) endDrag();
+  });
+
+  /* =========================
+     ✅ TOUCH SWIPE — same click-and-drag panning, for touchscreens.
+     Horizontal swipes pan between channels (like the mouse drag above);
+     vertical swipes are left alone so the page/panels scroll natively
+     up and down as expected.
+     ========================= */
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchScrollLeft = 0;
+  let touchAxis = null; // "x" | "y" | null (undecided)
+
+  wrapper.addEventListener("touchstart", (e) => {
+    if(isFormControl(e.target)) return;
+    const t = e.touches[0];
+    touchStartX = t.pageX;
+    touchStartY = t.pageY;
+    touchScrollLeft = wrapper.scrollLeft;
+    touchAxis = null;
+  }, { passive: true });
+
+  wrapper.addEventListener("touchmove", (e) => {
+    if(!e.touches.length) return;
+    const t = e.touches[0];
+    const dx = t.pageX - touchStartX;
+    const dy = t.pageY - touchStartY;
+
+    if(!touchAxis){
+      if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return; // not enough movement yet
+      touchAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if(touchAxis === "x") wrapper.classList.add("dragging");
+    }
+
+    if(touchAxis === "x"){
+      // Horizontal swipe: pan the channels, and stop the page from
+      // scrolling vertically underneath the gesture.
+      e.preventDefault();
+      wrapper.scrollLeft = touchScrollLeft - dx;
+    }
+    // touchAxis === "y": do nothing — native vertical scroll takes over.
+  }, { passive: false });
+
+  wrapper.addEventListener("touchend", () => {
+    wrapper.classList.remove("dragging");
+    touchAxis = null;
+  });
+  wrapper.addEventListener("touchcancel", () => {
+    wrapper.classList.remove("dragging");
+    touchAxis = null;
+  });
+})();
+
+/* =========================
+   ✅ DRAG-TO-TRASH
+   Grabbing a card's ⠿ handle and dropping it on the trash bin (left
+   sidebar) resets that boss to its original "no time set" state —
+   same as if it had never been killed. Uses Pointer Events so mouse
+   and touch both work with one code path.
+   ========================= */
+(function initCardTrash(){
+  const trash = document.getElementById("trashBin");
+  if(!trash) return;
+
+  let dragId = null;
+  let ghost = null;
+
+  function makeGhost(label){
+    const g = document.createElement("div");
+    g.className = "drag-ghost";
+    g.textContent = label;
+    document.body.appendChild(g);
+    return g;
+  }
+  function moveGhost(x, y){
+    if(ghost){ ghost.style.left = x + "px"; ghost.style.top = y + "px"; }
+  }
+  function removeGhost(){
+    if(ghost){ ghost.remove(); ghost = null; }
+  }
+  function isOverTrash(x, y){
+    const r = trash.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }
+
+  function onPointerMove(e){
+    if(dragId === null) return;
+    moveGhost(e.clientX, e.clientY);
+    trash.classList.toggle("drag-over", isOverTrash(e.clientX, e.clientY));
+  }
+
+  function onPointerUp(e){
+    if(dragId === null) return;
+    if(isOverTrash(e.clientX, e.clientY)) resetBoss(dragId);
+
+    const card = document.getElementById(dragId + "-card");
+    if(card) card.classList.remove("dragging-source");
+    trash.classList.remove("drag-over");
+    removeGhost();
+    dragId = null;
+
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+  }
+
+  document.querySelectorAll(".card-drag-handle").forEach(handle => {
+    handle.addEventListener("pointerdown", (e) => {
+      // Stop this from also being read as a channel-panning drag, and
+      // suppress the compatibility mouse events that would otherwise
+      // fire on the wrapper right after.
+      e.preventDefault();
+      e.stopPropagation();
+
+      const card = handle.closest(".card");
+      if(!card) return;
+      dragId = card.id.replace(/-card$/, "");
+      card.classList.add("dragging-source");
+
+      const nameEl = card.querySelector(".card-name");
+      ghost = makeGhost(nameEl ? nameEl.textContent : "Boss");
+      moveGhost(e.clientX, e.clientY);
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    });
+  });
+})();
+
+/* =========================
+   ✅ POP-UP GUIDE
+   ========================= */
+(function initGuide(){
+  const overlay   = document.getElementById("guideOverlay");
+  const helpBtn   = document.getElementById("guideHelpBtn");
+  const closeBtn  = document.getElementById("guideCloseBtn");
+  const gotItBtn  = document.getElementById("guideGotItBtn");
+  const dontShow  = document.getElementById("guideDontShow");
+  const STORAGE_KEY = "ran-tracker-guide-dismissed";
+
+  function guideDismissed(){
+    try{ return localStorage.getItem(STORAGE_KEY) === "1"; }catch(e){ return false; }
+  }
+  function setGuideDismissed(v){
+    try{ localStorage.setItem(STORAGE_KEY, v ? "1" : "0"); }catch(e){}
+  }
+
+  function openGuide(){
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeGuide(){
+    overlay.classList.remove("open");
+    document.body.style.overflow = "";
+    if(dontShow && dontShow.checked) setGuideDismissed(true);
+  }
+
+  if(helpBtn) helpBtn.onclick = openGuide;
+  if(closeBtn) closeBtn.onclick = closeGuide;
+  if(gotItBtn) gotItBtn.onclick = closeGuide;
+
+  // Click outside the modal to close
+  if(overlay){
+    overlay.addEventListener("click", (e) => {
+      if(e.target === overlay) closeGuide();
+    });
+  }
+
+  // Escape key to close
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape" && overlay && overlay.classList.contains("open")) closeGuide();
+  });
+
+  // Auto-show on first visit only
+  if(!guideDismissed()) openGuide();
+})();
+/* =========================
+   ✅ TOP BAR — LIVE CLOCK + SERVER STATUS DOT
+   ========================= */
+(function initTopBar(){
+  const clockEl = document.getElementById("liveClock");
+  const dateEl  = document.getElementById("liveDate");
+  const dot     = document.getElementById("serverDot");
+
+  function tick(){
+    const now = new Date();
+    if(clockEl) clockEl.textContent = now.toLocaleTimeString([], { hour12:false });
+    if(dateEl)  dateEl.textContent  = now.toLocaleDateString([], { month:"short", day:"numeric", year:"numeric" });
+    if(dot)     dot.className = "dot" + (serverReady ? "" : " syncing");
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+/* =========================
+   ✅ LEFT SIDE NAV — smooth-scroll to sections + active state
+   ========================= */
+(function initSideNav(){
+  const items = document.querySelectorAll("#sideNav .nav-item");
+  if(!items.length) return;
+
+  items.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+      const target = document.getElementById(targetId);
+
+      items.forEach(i => i.classList.remove("active"));
+      btn.classList.add("active");
+
+      // "Settings" opens the respawn filter dropdown instead of just scrolling to it
+      if(targetId === "respawnFilterDock"){
+        const dock = document.getElementById("respawnFilterDock");
+        if(dock) dock.classList.add("open");
+      }
+
+      if(target) target.scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+  });
+})();
