@@ -44,6 +44,11 @@
       <button class="nav-item" data-target="bossesSection"><span class="nav-ico">💀</span>Boss List</button>
       <button class="nav-item" data-target="historyPanel"><span class="nav-ico">🕒</span>Kill History</button>
       <button class="nav-item" id="navSettingsBtn" data-target="respawnFilterDock"><span class="nav-ico">⚙</span>Settings</button>
+
+      <div id="trashBin" class="trash-bin" title="Drag a card's ⠿ grip here to reset it">
+        <span class="trash-ico">🗑️</span>
+        <span class="trash-label">DRAG CARD<br>HERE TO<br>RESET</span>
+      </div>
     </nav>
 
     <!-- ============ MAIN COLUMN ============ -->
@@ -80,6 +85,10 @@
             <button class="control-bar control-sort" id="sortBtn">AUTO SORT: ON</button>
             <button class="control-bar control-sound" id="soundBtn">ALARM: ON</button>
             <button class="control-bar control-reset" onclick="resetAll()">RESET ALL</button>
+            <div class="boss-search-wrap">
+              <span class="boss-search-icon">🔍</span>
+              <input type="text" id="bossSearchInput" class="boss-search-input" placeholder="Search: ch0, ef, mpcamp…" autocomplete="off">
+            </div>
             <button id="bossFilterToggleBtn" class="respawn-filter-btn" type="button">
               <span class="rf-icon">⏱</span>
               <span>ALL BOSSES</span>
@@ -93,10 +102,6 @@
           <div id="bossFilterPanel">
             <div class="filter-header">
               <h3><span class="rf-icon">⚔</span> BOSSES &amp; RESPAWN TIME</h3>
-              <div class="boss-search-wrap">
-                <span class="boss-search-icon">🔍</span>
-                <input type="text" id="bossSearchInput" class="boss-search-input" placeholder="Search boss..." autocomplete="off">
-              </div>
             </div>
             <div class="filter-actions">
               <button class="small-btn btn-refresh" id="filterShowAllBtn">SHOW ALL</button>
