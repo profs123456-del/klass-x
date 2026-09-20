@@ -26,6 +26,28 @@
 
 *{box-sizing:border-box}
 
+/* =========================
+   CUSTOM CURSOR — glowing cyan arrow (default) +
+   crosshair/target (clickable elements). Matches the
+   UNGOVERNED neon blue/cyan theme.
+   ========================= */
+html, body{
+  cursor:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZGVmcz4KICAgIDxmaWx0ZXIgaWQ9ImciIHg9Ii01MCUiIHk9Ii01MCUiIHdpZHRoPSIyMDAlIiBoZWlnaHQ9IjIwMCUiPgogICAgICA8ZmVHYXVzc2lhbkJsdXIgaW49IlNvdXJjZUdyYXBoaWMiIHN0ZERldmlhdGlvbj0iMS4xIiByZXN1bHQ9ImIiLz4KICAgICAgPGZlTWVyZ2U+PGZlTWVyZ2VOb2RlIGluPSJiIi8+PGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+PC9mZU1lcmdlPgogICAgPC9maWx0ZXI+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImZpbGwiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMTExODI3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBiMGYxYSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHBvbHlnb24gcG9pbnRzPSIzLDIgMywyNSA4LjUsMjAuNSAxMi41LDI5IDE3LDI3IDEzLDE4LjUgMjEsMTguNSIKICAgIGZpbGw9InVybCgjZmlsbCkiIHN0cm9rZT0iIzM4QkRGOCIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGZpbHRlcj0idXJsKCNnKSIvPgo8L3N2Zz4K") 3 2, auto;
+}
+
+button, a, .nav-item, .control-bar, .small-btn, .respawn-filter-btn,
+.card-drag-handle, #guideHelpBtn, #guideCloseBtn, #guideGotItBtn,
+.guide-dontshow, .hour-pill, .channel-pill, .boss-filter-row,
+[onclick], [role="button"]{
+  cursor:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZGVmcz4KICAgIDxmaWx0ZXIgaWQ9ImciIHg9Ii01MCUiIHk9Ii01MCUiIHdpZHRoPSIyMDAlIiBoZWlnaHQ9IjIwMCUiPgogICAgICA8ZmVHYXVzc2lhbkJsdXIgaW49IlNvdXJjZUdyYXBoaWMiIHN0ZERldmlhdGlvbj0iMSIgcmVzdWx0PSJiIi8+CiAgICAgIDxmZU1lcmdlPjxmZU1lcmdlTm9kZSBpbj0iYiIvPjxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPjwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8ZyBmaWx0ZXI9InVybCgjZykiPgogICAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iOS41IiBmaWxsPSJyZ2JhKDU2LDE4OSwyNDgsMC4wOCkiIHN0cm9rZT0iIzM4QkRGOCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIyLjYiIGZpbGw9IiMzOEJERjgiLz4KICAgIDxsaW5lIHgxPSIxNiIgeTE9IjEiIHgyPSIxNiIgeTI9IjciIHN0cm9rZT0iIzM4QkRGOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxsaW5lIHgxPSIxNiIgeTE9IjI1IiB4Mj0iMTYiIHkyPSIzMSIgc3Ryb2tlPSIjMzhCREY4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGxpbmUgeDE9IjEiIHkxPSIxNiIgeDI9IjciIHkyPSIxNiIgc3Ryb2tlPSIjMzhCREY4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGxpbmUgeDE9IjI1IiB5MT0iMTYiIHgyPSIzMSIgeTI9IjE2IiBzdHJva2U9IiMzOEJERjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPC9nPgo8L3N2Zz4K") 16 16, pointer !important;
+}
+
+/* Keep native text cursor for typing fields */
+input, textarea, [contenteditable="true"]{cursor:text;}
+
+/* Keep native grab/grabbing on the card drag handle while actively dragging */
+.card-drag-handle:active{cursor:grabbing !important;}
+
 /* No accidental text-selection while interacting with the tracker —
    inputs are excluded further down so typing/selecting still works. */
 body, button, h1, h2, h3, h4, .card, .channel-header, .channel-title,
