@@ -53,7 +53,7 @@ const BOSS_SECTION_KEY = "bosses";
 const bosses = [
   {id:"1",name:"Darkswordsman Jr.",location:"Mystic Peak Hole",fullName:"CH-0 Darkswordsman Jr. - Mystic Peak Hole.",channel:0,respawn:60},
   {id:"2",name:"Darkswordsman Jr.",location:"Phoenix Hole",fullName:"CH-0 Darkswordsman Jr. - Phoenix Hole.",channel:0,respawn:60},
-  {id:"3",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-0 Darkswordsman Jr. - SGe Campus.",channel:0,respawn:60},
+  {id:"3",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-0 Darkswordsman Jr. - SG Campus.",channel:0,respawn:60},
   {id:"4",name:"Darkswordsman Jr.",location:"MP Campus",fullName:"CH-0 Darkswordsman Jr. - MP Campus.",channel:0,respawn:60},
   {id:"5",name:"Darkswordsman Jr.",location:"Phoenix Campus",fullName:"CH-0 Darkswordsman Jr. - Phoenix Campus.",channel:0,respawn:60},
   {id:"6",name:"Etherial Fist",location:"Mystic Peak Hole",fullName:"CH-0 Etherial Fist - Mystic Peak Hole.",channel:0,respawn:120},
@@ -124,11 +124,11 @@ const LOCATION_BG_MAP = [
    locations (e.g. "Phoenix Hole") are shared by more than one boss
    species and need to resolve to different art per species. */
 const BOSS_LOCATION_ART_MAP = [
-  { name: "Darkswordsman Jr.", location: "MP Campus",    file: "MP_Campdsjr.png" },
-  { name: "Darkswordsman Jr.", location: "Mystic Peak Hole",    file: "Mystic_Peak_Hole.png" },
-  { name: "Darkswordsman Jr.", location: "Phoenix Hole",        file: "Phoenix_Hole_DS.png" },
-  { name: "Darkswordsman Jr.", location: "SG Campus",  file: "Sacred_Gate_Dsjr_.png" },
-  { name: "Darkswordsman Jr.", location: "Phoenix Campus",      file: "Phoenix_Campus_DS.png" },
+  { name: "Darkswordsman Jr.", location: "MP Campus",    file: "mpc_dsjr.png" },
+  { name: "Darkswordsman Jr.", location: "Mystic Peak Hole",    file: "mph_dsjr.png" },
+  { name: "Darkswordsman Jr.", location: "Phoenix Hole",        file: "ph_dsjr.png" },
+  { name: "Darkswordsman Jr.", location: "SG Campus",  file: "sgc_dsjr.png" },
+  { name: "Darkswordsman Jr.", location: "Phoenix Campus",      file: "pc_dsjr.png" },
   { name: "Etherial Fist",     location: "Mystic Peak Hole",    file: "Etherial_Fist_MP.png" },
   { name: "Etherial Fist",     location: "Phoenix Hole",        file: "Etherial_Fist_PH.png" },
   { name: "Etherial Fist",     location: "Sacred Gate Hole",        file: "Etherial_Fist_SG.png" },
@@ -719,9 +719,10 @@ soundBtn.onclick = () => {
    scene shot, which crops awkwardly into a small 44px circle — these
    are tighter portrait crops chosen to read clearly at avatar size. */
 const BOSS_HISTORY_ICON_MAP = [
-  ["Etherial Fist", "Etherial_Fist_Icon.png"],
-  ["Darkswordsman Jr.", "Darkswordsman_Icon.png"],
-  ["Ninja Knife", "Ninja_Knife_Icon.png"],
+  ["Etherial Fist", "ef.png"],
+  ["Darkswordsman Jr.", "dsicon.png"],
+  ["Ninja Knife", "nk.png"],
+  ["Dark Swordsman", "darkswordsman.png"],
 ];
 
 function getHistoryIcon(name){
@@ -752,6 +753,10 @@ function parseHistoryEntry(raw){
   return {ch, bossName, location, bg, mapIcon};
 }
 
+/* Full unfiltered set from the last Firebase read, kept around so the
+   search box can re-filter locally without a fresh fetch every keystroke. */
+let historyItemsCache = [];
+
 function renderHistory(items){
   const historyList = document.getElementById("historyList");
   historyList.innerHTML = "";
@@ -759,7 +764,9 @@ function renderHistory(items){
   if(!items || items.length === 0){
     const empty = document.createElement("div");
     empty.className = "history-item";
-    empty.textContent = "No logs yet. Click Killed Now.";
+    empty.textContent = historyItemsCache.length
+      ? "No matches found."
+      : "No logs yet. Click Killed Now.";
     historyList.appendChild(empty);
     return;
   }
@@ -796,12 +803,46 @@ function renderHistory(items){
   });
 }
 
+/* Filters historyItemsCache against the search box (boss name, location,
+   or "ch2"/"ch 2" style channel shorthand) and re-renders the list. */
+function applyHistorySearch(){
+  const input = document.getElementById("historySearchInput");
+  const q = (input && input.value || "").trim().toLowerCase();
+
+  if(!q){
+    renderHistory(historyItemsCache);
+    return;
+  }
+
+  const chQuery = q.match(/^ch\s*(\d+)$/);
+
+  const filtered = historyItemsCache.filter(item => {
+    const {ch, bossName, location} = parseHistoryEntry(item.name);
+    if(chQuery) return ch === chQuery[1];
+    const haystack = (bossName + " " + location + " ch" + ch).toLowerCase();
+    return haystack.includes(q);
+  });
+
+  renderHistory(filtered);
+}
+
+function setHistoryData(items){
+  historyItemsCache = items || [];
+  applyHistorySearch();
+}
+
+(function initHistorySearch(){
+  const input = document.getElementById("historySearchInput");
+  if(!input) return;
+  input.addEventListener("input", applyHistorySearch);
+})();
+
 function refreshHistory(){
   db.ref("history").limitToLast(HISTORY_LIMIT).once("value").then(snapshot => {
     const data = snapshot.val();
-    if(!data) return renderHistory([]);
+    if(!data) return setHistoryData([]);
     const items = Object.values(data).sort((a,b) => b.killedAt - a.killedAt);
-    renderHistory(items);
+    setHistoryData(items);
   });
 }
 
@@ -830,9 +871,9 @@ function clearHistory(){
 
 db.ref("history").limitToLast(HISTORY_LIMIT).on("value", snapshot => {
   const data = snapshot.val();
-  if(!data) return renderHistory([]);
+  if(!data) return setHistoryData([]);
   const items = Object.values(data).sort((a,b) => b.killedAt - a.killedAt);
-  renderHistory(items);
+  setHistoryData(items);
 });
 
 /* =========================
