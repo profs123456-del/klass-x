@@ -53,7 +53,7 @@ const BOSS_SECTION_KEY = "bosses";
 const bosses = [
   {id:"1",name:"Darkswordsman Jr.",location:"Mystic Peak Hole",fullName:"CH-0 Darkswordsman Jr. - Mystic Peak Hole.",channel:0,respawn:60},
   {id:"2",name:"Darkswordsman Jr.",location:"Phoenix Hole",fullName:"CH-0 Darkswordsman Jr. - Phoenix Hole.",channel:0,respawn:60},
-  {id:"3",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-0 Darkswordsman Jr. - SGe Campus.",channel:0,respawn:60},
+  {id:"3",name:"Darkswordsman Jr.",location:"SG Campus",fullName:"CH-0 Darkswordsman Jr. - SG Campus.",channel:0,respawn:60},
   {id:"4",name:"Darkswordsman Jr.",location:"MP Campus",fullName:"CH-0 Darkswordsman Jr. - MP Campus.",channel:0,respawn:60},
   {id:"5",name:"Darkswordsman Jr.",location:"Phoenix Campus",fullName:"CH-0 Darkswordsman Jr. - Phoenix Campus.",channel:0,respawn:60},
   {id:"6",name:"Etherial Fist",location:"Mystic Peak Hole",fullName:"CH-0 Etherial Fist - Mystic Peak Hole.",channel:0,respawn:120},
