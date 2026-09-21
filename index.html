@@ -45,6 +45,14 @@
       <button class="nav-item" data-target="historyPanel"><span class="nav-ico">🕒</span>Kill History</button>
       <button class="nav-item" id="navSettingsBtn" data-target="respawnFilterDock"><span class="nav-ico">⚙</span>Settings</button>
 
+      <div class="channel-legend">
+        <div class="legend-title"><span class="nav-ico">🎨</span>CHANNEL COLORS</div>
+        <div class="legend-item"><span class="legend-dot ch-0"></span>CH 0</div>
+        <div class="legend-item"><span class="legend-dot ch-1"></span>CH 1</div>
+        <div class="legend-item"><span class="legend-dot ch-2"></span>CH 2</div>
+        <div class="legend-item"><span class="legend-dot ch-3"></span>CH 3</div>
+      </div>
+
       <div id="trashBin" class="trash-bin" title="Drag a card's ⠿ grip here to reset it">
         <span class="trash-ico">🗑️</span>
         <span class="trash-label">DRAG CARD<br>HERE TO<br>RESET</span>
@@ -122,6 +130,10 @@
     <aside id="rightCol">
       <div id="historyPanel">
         <h3><span class="rf-icon">📜</span> KILL HISTORY</h3>
+        <div class="history-search-wrap">
+          <span class="boss-search-icon">🔍</span>
+          <input type="text" id="historySearchInput" class="boss-search-input" placeholder="Search: dsjr, sg campus, ch1…" autocomplete="off">
+        </div>
         <div id="historyList"></div>
 
         <div class="history-actions">
