@@ -1116,16 +1116,22 @@ button:active{transform:translateY(0); filter:brightness(.92);}
 .history-avatar--fallback::before{content:"💀";}
 .history-map-badge{
   position:absolute;
-  right:-3px;
-  bottom:-3px;
-  width:20px;
-  height:20px;
-  border-radius:50%;
-  background:#0b0f1a;
-  border:2px solid var(--panel);
+  right:-5px;
+  bottom:-4px;
+  width:22px;
+  height:22px;
+  border-radius:0;
+  background:transparent;   /* transparent PNG style — no dark circle behind the icon */
+  border:none;
   object-fit:contain;
-  padding:2px;
+  padding:0;
   box-sizing:border-box;
+  pointer-events:none;
+  /* thin dark outline so the icon stays readable on any background */
+  filter:
+    drop-shadow(0 0 1px rgba(0,0,0,.95))
+    drop-shadow(0 0 1px rgba(0,0,0,.95))
+    drop-shadow(0 1px 2px rgba(0,0,0,.6));
 }
 .history-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
 .history-name{
@@ -1371,6 +1377,29 @@ button:active{transform:translateY(0); filter:brightness(.92);}
 .c-cyan{color:var(--glow);}
 .c-teal{color:var(--purple);}
 .c-gold{color:var(--warning);}
+
+/* ---- Guide additions: channel chips + search shortcut codes ---- */
+.guide-step p + p{margin-top:8px;}
+.guide-step code{
+  font-family:'Orbitron', sans-serif; font-size:10.5px; letter-spacing:.5px;
+  color:var(--glow); background:rgba(56,189,248,.10);
+  border:1px solid rgba(56,189,248,.28); border-radius:5px; padding:1px 5px;
+}
+.guide-abbr{line-height:2 !important;}
+.guide-abbr b{color:#fff; font-weight:700;}
+.guide-ch-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+.guide-ch-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'Orbitron', sans-serif; font-size:11px; font-weight:700; letter-spacing:1px;
+  padding:4px 10px; border-radius:999px;
+  color:var(--ch-color); border:1px solid var(--ch-color);
+  box-shadow:0 0 10px var(--ch-glow);
+}
+.guide-ch-chip i{width:9px; height:9px; border-radius:50%; background:var(--ch-color); box-shadow:0 0 8px var(--ch-glow);}
+.guide-ch-chip.ch-0{--ch-color:#38BDF8; --ch-glow:rgba(56,189,248,.45);}
+.guide-ch-chip.ch-1{--ch-color:#22C55E; --ch-glow:rgba(34,197,94,.45);}
+.guide-ch-chip.ch-2{--ch-color:#F59E0B; --ch-glow:rgba(245,158,11,.45);}
+.guide-ch-chip.ch-3{--ch-color:#EC4899; --ch-glow:rgba(236,72,153,.45);}
 
 .guide-summary{border-top:1px solid var(--border); padding-top:18px; margin-bottom:20px;}
 .guide-summary h4{text-align:center; font-family:'Orbitron', sans-serif; letter-spacing:3px; font-size:15px; color:#fff; margin:0 0 16px;}
